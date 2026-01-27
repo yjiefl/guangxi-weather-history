@@ -492,9 +492,9 @@ function displayStatsCards(summary) {
     if (summary.wind_speed) {
         statsCards.appendChild(createStatCard(
             '风速',
-            summary.wind_speed.avg,
-            'km/h',
-            `最大: ${summary.wind_speed.max} km/h`,
+            (summary.wind_speed.avg / 3.6).toFixed(2),
+            'm/s',
+            `最大: ${(summary.wind_speed.max / 3.6).toFixed(2)} m/s`,
             'wind'
         ));
     }

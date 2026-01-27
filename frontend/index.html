@@ -236,6 +236,7 @@
                 <button class="tab-btn" data-tab="download">批量下载</button>
                 <button class="tab-btn" data-tab="check">完整性检查</button>
                 <button class="tab-btn" data-tab="stats">数据统计</button>
+                <button class="tab-btn" data-tab="delete" style="color: var(--color-danger);">删除数据</button>
             </div>
 
             <!-- 批量下载标签页 -->
@@ -370,6 +371,43 @@
                         </svg>
                         刷新统计
                     </button>
+                </div>
+            </div>
+
+            <!-- 删除数据标签页 -->
+            <div class="tab-content" id="delete-tab">
+                <div class="query-form">
+                    <div class="result-message error" style="margin-bottom: 20px;">
+                        <strong>警告：</strong> 数据删除后无法恢复，请谨慎操作！
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label>选择城市 (不选则默认为全部城市)</label>
+                            <div class="field-selector city-selector-compact" id="deleteCitySelect">
+                                <p style="color: rgba(0,0,0,0.5);">加载中...</p>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="deleteStartDate">开始日期 (可选)</label>
+                            <input type="date" id="deleteStartDate" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="deleteEndDate">结束日期 (可选)</label>
+                            <input type="date" id="deleteEndDate" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="deleteDataBtn" class="btn btn-danger">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"
+                                    fill="currentColor" />
+                            </svg>
+                            确认删除
+                        </button>
+                    </div>
+                    <div id="deleteResult" class="result-message" style="display: none;"></div>
                 </div>
             </div>
         </div>

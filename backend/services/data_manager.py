@@ -320,17 +320,16 @@ class DataManager:
                 result = self.db_manager.execute_query(sql, (city['id'],))
                 
                 if result and result[0]['count'] > 0:
+                    row = result[0]
                     city_stats.append({
-                        'city_id': city['id'],
                         'city_name': city['city_name'],
-                        'record_count': result[0]['count'],
-                        'earliest_date': result[0]['earliest'][:10] if result[0]['earliest'] else None,
-                        'latest_date': result[0]['latest'][:10] if result[0]['latest'] else None
+                        'record_count': row['count'],
+                        'earliest_date': row['earliest'],
+                        'latest_date': row['latest']
                     })
-                    total_records += result[0]['count']
+                    total_records += row['count']
                 else:
                     city_stats.append({
-                        'city_id': city['id'],
                         'city_name': city['city_name'],
                         'record_count': 0,
                         'earliest_date': None,
@@ -344,5 +343,29 @@ class DataManager:
             }
             
         except Exception as e:
-            logger.error(f"获取统计信息失败: {e}")
+            logger.error(f"获取数据统计失败: {e}")
+            raise
+
+    def delete_data(self, city_id: int, start_date: str = None, end_date: str = None) -> Dict[str, Any]:
+        """
+        删除指定范围的数据
+        """
+        try:
+            filters = {'city_id': city_id}
+            if start_date:
+                filters['start_date'] = start_date
+            if end_date:
+                filters['end_date'] = end_date
+                
+            deleted_count = self.db_manager.delete_weather_data(filters)
+            
+            logger.info(f"删除数据成功: 城市ID={city_id}, 删除 {deleted_count} 条")
+            
+            return {
+                'success': True,
+                'deleted_count': deleted_count,
+                'message': f"成功删除 {deleted_count} 条记录"
+            }
+        except Exception as e:
+            logger.error(f"删除数据失败: {e}")
             raise

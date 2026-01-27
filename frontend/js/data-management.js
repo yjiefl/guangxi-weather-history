@@ -28,7 +28,8 @@ function initDataManagement() {
         'checkCompletenessBtn': handleCheckCompleteness,
         'refreshStatsBtn': loadDataStatistics,
         'exportBulkDataBtn': handleExportBulk,
-        'clearAllCitiesBtn': handleClearAllCities
+        'clearAllCitiesBtn': handleClearAllCities,
+        'deleteDataBtn': handleDeleteData
     };
 
     Object.entries(bindings).forEach(([id, handler]) => {
@@ -88,6 +89,7 @@ function populateManagementCities() {
     // 使用 CommonUtils 渲染多选列表 (Item 4)
     CommonUtils.renderCityCheckboxes('downloadCitySelect', 'dl-city-checkbox', 'dlCity', true);
     CommonUtils.renderCityCheckboxes('checkCitySelect', 'check-city-checkbox', 'checkCity', true);
+    CommonUtils.renderCityCheckboxes('deleteCitySelect', 'del-city-checkbox', 'delCity', true);
 }
 
 async function handleBatchDownload() {
@@ -628,6 +630,78 @@ async function handleClearAllCities() {
         }
     } catch (error) {
         alert('清空失败: ' + error.message);
+    }
+}
+
+/**
+ * 处理删除天气数据
+ */
+async function handleDeleteData() {
+    const cityIds = CommonUtils.getSelectedCityIds('del-city-checkbox');
+    const startDate = document.getElementById('deleteStartDate').value;
+    const endDate = document.getElementById('deleteEndDate').value;
+
+    // 如果没有选择城市，默认认为是对所有城市操作吗？前端应该强制用户选择或者明确全选
+    // 这里为了安全，如果没选城市，提示选择
+    if (cityIds.length === 0) {
+        if (!confirm('您未选择特定城市，这将尝试删除所有已选定范围的数据（需配合日期）。是否继续？')) {
+            return;
+        }
+    }
+
+    if (!startDate && !endDate) {
+        showResultMessage('deleteResult', '请至少指定开始日期或结束日期，以防止误删全部数据', 'error');
+        return;
+    }
+
+    const confirmMsg = `确定要删除 ${cityIds.length > 0 ? cityIds.length + ' 个城市' : '所有城市'} 在 ${startDate || '起初'} 至 ${endDate || '至今'} 的数据吗？此操作不可恢复！`;
+    if (!confirm(confirmMsg)) return;
+
+    const btn = document.getElementById('deleteDataBtn');
+    btn.disabled = true;
+    btn.innerHTML = '删除中...';
+
+    try {
+        let successCount = 0;
+        let failCount = 0;
+
+        // 如果未选择城市但指定了日期，可能意图是删除所有城市的该日期段数据
+        // 前端简单处理：如果没选城市，就获取所有城市
+        const targetCityIds = cityIds.length > 0 ? cityIds : appState.cities.map(c => c.id);
+
+        for (const cityId of targetCityIds) {
+            try {
+                const res = await api.deleteData({
+                    city_id: cityId,
+                    start_date: startDate,
+                    end_date: endDate
+                });
+                if (res.code === 200) {
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+            } catch (e) {
+                failCount++;
+                console.error(e);
+            }
+        }
+
+        showResultMessage('deleteResult', `删除完成: ${successCount} 个城市数据已清理` + (failCount > 0 ? `, ${failCount} 个失败` : ''), 'success');
+
+        // 刷新统计
+        loadDataStatistics();
+
+    } catch (error) {
+        showResultMessage('deleteResult', '删除过程出错: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/>
+            </svg>
+            确认删除
+        `;
     }
 }
 

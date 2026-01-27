@@ -292,3 +292,37 @@ class DatabaseManager:
         sql = f"SELECT * FROM weather_data WHERE {where_clause} ORDER BY datetime"
         
         return self.execute_query(sql, tuple(params))
+
+    def delete_weather_data(self, filters: Dict[str, Any]) -> int:
+        """
+        根据过滤条件删除天气数据
+        
+        Args:
+            filters: 过滤条件
+            
+        Returns:
+            删除的行数
+        """
+        conditions = []
+        params = []
+        
+        if 'city_id' in filters:
+            conditions.append("city_id = ?")
+            params.append(filters['city_id'])
+            
+        if 'start_date' in filters:
+            conditions.append("datetime >= ?")
+            params.append(filters['start_date'])
+            
+        if 'end_date' in filters:
+            conditions.append("datetime <= ?")
+            params.append(filters['end_date'])
+            
+        if not conditions:
+            # 防止误删全表
+            return 0
+            
+        where_clause = " AND ".join(conditions)
+        sql = f"DELETE FROM weather_data WHERE {where_clause}"
+        
+        return self.execute_update(sql, tuple(params))

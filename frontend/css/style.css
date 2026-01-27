@@ -4,38 +4,44 @@
    ======================================== */
 
 /* 全局变量 */
+/* 全局变量 */
 :root {
     /* 苹果色彩体系 */
     --color-primary: #007aff;
-    --color-primary-dark: #0056b3;
+    /* Apple Blue */
+    --color-primary-dark: #0071e3;
     --color-secondary: #ff9500;
     --color-success: #34c759;
     --color-warning: #ffcc00;
     --color-danger: #ff3b30;
 
-    /* 苹果风格背景 */
-    --bg-primary: #000000;
-    --bg-secondary: #0a0a0c;
-    --bg-card: rgba(255, 255, 255, 0.08);
-    --bg-card-hover: rgba(255, 255, 255, 0.12);
-    --bg-surface: rgba(44, 44, 46, 0.6);
+    /* 苹果风格背景 (Light Mode) */
+    --bg-primary: #f5f5f7;
+    /* Apple Website Gray */
+    --bg-secondary: #ffffff;
+    --bg-card: rgba(255, 255, 255, 0.7);
+    --bg-card-hover: rgba(255, 255, 255, 0.9);
+    --bg-surface: rgba(255, 255, 255, 0.85);
+    /* Glassmorphism background */
+    --bg-input: rgba(0, 0, 0, 0.05);
 
     /* 文字颜色 */
-    --text-primary: #ffffff;
-    --text-secondary: #ebebf5;
-    --text-muted: #8e8e93;
+    --text-primary: #1d1d1f;
+    /* Apple Black */
+    --text-secondary: #86868b;
+    --text-muted: #a1a1a6;
 
     /* 边框与半径 */
-    --border-color: rgba(255, 255, 255, 0.12);
-    --border-radius: 14px;
-    --border-radius-lg: 22px;
-    --border-radius-pill: 50px;
+    --border-color: rgba(0, 0, 0, 0.1);
+    --border-radius: 12px;
+    --border-radius-lg: 18px;
+    --border-radius-pill: 99px;
 
     /* 苹果风格阴影与特效 */
-    --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.08);
-    --shadow-md: 0 12px 24px rgba(0, 0, 0, 0.16);
-    --shadow-lg: 0 24px 48px rgba(0, 0, 0, 0.24);
-    --glass-blur: 25px;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05), 0 12px 16px rgba(0, 0, 0, 0.05);
+    --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.08);
+    --glass-blur: 20px;
 
     /* 苹果系统字体 */
     --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
@@ -56,7 +62,8 @@ html {
 
 body {
     font-family: var(--font-family);
-    background: radial-gradient(circle at 50% 0%, #1c1c1e 0%, #000000 100%);
+    background: var(--bg-primary);
+    background-image: linear-gradient(180deg, #f5f5f7 0%, #ffffff 100%);
     background-attachment: fixed;
     color: var(--text-primary);
     line-height: 1.5;
@@ -202,11 +209,11 @@ body {
 .form-control:focus {
     outline: none;
     border-color: var(--color-primary);
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.9);
 }
 
 .form-control option {
-    background: #1c1c1e;
+    background: #ffffff;
     color: var(--text-primary);
 }
 
@@ -539,7 +546,7 @@ body {
 }
 
 .data-table thead {
-    background: rgba(255, 255, 255, 0.05);
+    background: rgba(0, 0, 0, 0.02);
 }
 
 .data-table th {
@@ -564,7 +571,7 @@ body {
 }
 
 .data-table tbody tr:hover {
-    background: rgba(255, 255, 255, 0.04);
+    background: rgba(0, 0, 0, 0.02);
 }
 
 /* 底部信息栏 */
@@ -699,12 +706,12 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(0, 0, 0, 0.4);
     border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.3);
 }
 
 /* 数据管理面板 (Apple Card) */
@@ -720,7 +727,7 @@ body {
 
 .management-tabs {
     display: inline-flex;
-    background: rgba(118, 118, 128, 0.24);
+    background: rgba(118, 118, 128, 0.12);
     padding: 2px;
     border-radius: 10px;
     margin-bottom: 24px;
@@ -744,8 +751,8 @@ body {
 }
 
 .tab-btn.active {
-    background: rgba(255, 255, 255, 0.15);
-    color: white;
+    background: #ffffff;
+    color: #1d1d1f;
     box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12);
 }
 

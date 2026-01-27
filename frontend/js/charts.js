@@ -243,8 +243,8 @@ class ChartManager {
 
         if (data[0]?.wind_speed_10m !== undefined) {
             datasets.push({
-                label: '10米风速 (km/h)',
-                data: data.map(d => d.wind_speed_10m),
+                label: '10米风速 (m/s)',
+                data: data.map(d => (d.wind_speed_10m / 3.6).toFixed(2)),
                 borderColor: '#10b981',
                 backgroundColor: 'rgba(16, 185, 129, 0.1)',
                 borderWidth: 2,

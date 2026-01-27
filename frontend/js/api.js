@@ -93,10 +93,20 @@ class APIClient {
         return this.post('/weather/query', params);
     }
 
+
     /**
-     * 导出天气数据
-     * @param {object} params - 导出参数
-     * @param {string} format - 导出格式 (excel/csv)
+     * 删除数据
+     * @param {object} params - 删除参数 {city_id, start_date, end_date}
+     */
+    async deleteData(params) {
+        return this.request('/data/delete', {
+            method: 'DELETE',
+            body: JSON.stringify(params)
+        });
+    }
+
+    /**
+     * 批量导出完整数据
      */
     async exportWeather(params, format = 'excel') {
         const url = `${API_BASE_URL}/weather/export`;

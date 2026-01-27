@@ -775,6 +775,40 @@ def auto_update():
         }), 500
 
 
+@api_bp.route('/data/delete', methods=['DELETE'])
+def delete_data():
+    """
+    删除指定范围的数据
+    """
+    try:
+        data = request.get_json()
+        city_id = data.get('city_id')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        
+        if not city_id:
+            return jsonify({
+                'code': 400,
+                'message': '缺少必要参数：city_id',
+                'data': None
+            }), 400
+            
+        result = data_manager.delete_data(city_id, start_date, end_date)
+        
+        return jsonify({
+            'code': 200,
+            'message': result['message'],
+            'data': result
+        })
+    except Exception as e:
+        logger.error(f"删除数据失败: {e}")
+        return jsonify({
+            'code': 500,
+            'message': f"删除失败: {str(e)}",
+            'data': None
+        }), 500
+
+
 @api_bp.route('/data/statistics', methods=['GET'])
 def get_data_statistics():
     """
