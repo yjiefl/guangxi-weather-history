@@ -107,10 +107,8 @@ async function handleBatchDownload() {
         downloadState.totalChunks = cityIds.length * chunks.length;
         downloadState.completedChunks = 0;
 
-        const fields = appState.selectedFields.length > 0 ? appState.selectedFields : [
-            "temperature_2m", "relative_humidity_2m", "shortwave_radiation",
-            "wind_speed_10m", "precipitation", "weather_code"
-        ];
+        // 获取所有可用字段以确保数据完整性 (Item 2)
+        const fields = CommonUtils.getAllFieldKeys();
 
         for (const cityId of cityIds) {
             const city = appState.cities.find(c => c.id === cityId);
@@ -227,7 +225,8 @@ async function handleDownloadAllCities() {
         downloadState.totalChunks = cities.length;
         downloadState.completedChunks = 0;
 
-        const fields = appState.selectedFields.length > 0 ? appState.selectedFields : ["temperature_2m", "relative_humidity_2m", "shortwave_radiation", "wind_speed_10m"];
+        // 获取所有可用字段以确保数据完整性
+        const fields = CommonUtils.getAllFieldKeys();
 
         for (const city of cities) {
             if (downloadState.cancelRequested) {

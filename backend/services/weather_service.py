@@ -11,6 +11,8 @@ from backend.services.cache_manager import CacheManager
 from backend.models.city import CityManager
 from backend.models.database import DatabaseManager
 
+from backend.config import AVAILABLE_FIELDS
+
 logger = logging.getLogger(__name__)
 
 
@@ -66,13 +68,21 @@ class WeatherService:
         Returns:
             天气数据字典
         """
-        # 生成缓存键
+        # 如果提供了city_id，为了保证数据库的完整性，我们总是获取所有可用字段 (Item 2)
+        request_fields = fields
+        if city_id:
+            all_fields = []
+            for cat in AVAILABLE_FIELDS.values():
+                all_fields.extend(cat.keys())
+            request_fields = list(set(fields + all_fields))
+            
+        # 生成缓存键 (包含请求的所有字段)
         cache_params = {
             'lon': longitude,
             'lat': latitude,
             'start': start_date,
             'end': end_date,
-            'fields': sorted(fields),
+            'fields': sorted(request_fields),
             'tz': timezone
         }
         cache_key = self.cache.generate_cache_key(cache_params)
@@ -81,22 +91,30 @@ class WeatherService:
         cached_data = self.cache.get(cache_key)
         if cached_data:
             logger.info(f"从缓存获取数据: {start_date} 至 {end_date}")
+            # 如果请求的字段被缓存，则提取原本请求的部分返回
+            if request_fields != fields:
+                filtered_hourly = []
+                for rec in cached_data.get('hourly_data', []):
+                    filtered_rec = {k: v for k, v in rec.items() if k in fields or k == 'datetime'}
+                    filtered_hourly.append(filtered_rec)
+                
+                return {**cached_data, 'hourly_data': filtered_hourly}
             return cached_data
         
         # 构建API URL
         api_url = self._build_api_url(
-            longitude, latitude, start_date, end_date, fields, timezone
+            longitude, latitude, start_date, end_date, request_fields, timezone
         )
         
         try:
             # 调用API
-            logger.info(f"调用Open-Meteo API: {start_date} 至 {end_date}")
+            logger.info(f"调用Open-Meteo API: {start_date} 至 {end_date}, 字段数: {len(request_fields)}")
             response = requests.get(api_url, timeout=30)
             response.raise_for_status()
             
-            # 解析响应
+            # 解析响应 (使用实际请求的字段)
             data = response.json()
-            parsed_data = self._parse_response(data, fields)
+            parsed_data = self._parse_response(data, request_fields)
             
             # 存入缓存
             self.cache.set(cache_key, parsed_data)
@@ -110,6 +128,16 @@ class WeatherService:
                     logger.warning(f"保存到永久数据库失败(非致命): {e}")
             
             logger.info(f"获取天气数据成功，共 {len(parsed_data.get('hourly_data', []))} 条记录")
+            
+            # 如果实际请求的字段多于用户请求，只向用户返回用户请求的部分
+            if request_fields != fields:
+                filtered_hourly = []
+                for rec in parsed_data.get('hourly_data', []):
+                    filtered_rec = {k: v for k, v in rec.items() if k in fields or k == 'datetime'}
+                    filtered_hourly.append(filtered_rec)
+                
+                return {**parsed_data, 'hourly_data': filtered_hourly}
+                
             return parsed_data
             
         except requests.exceptions.RequestException as e:
