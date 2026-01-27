@@ -219,6 +219,8 @@ class DataExporter:
             'wind_speed_10m': '10米风速(km/h)',
             'wind_direction_10m': '10米风向(°)',
             'wind_gusts_10m': '10米阵风(km/h)',
+            'wind_speed_100m': '100米风速(km/h)',
+            'wind_direction_100m': '100米风向(°)',
             'wind_speed_80m': '80米风速(km/h)',
             'wind_speed_120m': '120米风速(km/h)',
             'wind_speed_180m': '180米风速(km/h)',

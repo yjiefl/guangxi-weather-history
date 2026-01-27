@@ -221,8 +221,20 @@ class WeatherService:
         Returns:
             完整的API URL
         """
-        # 将字段列表转换为逗号分隔的字符串
-        hourly_params = ','.join(fields)
+        # 将字段列表转换为逗号分隔的字符串，考虑 API 参数映射 (Item 2)
+        api_fields_list = []
+        for f in fields:
+            # 查找字段对应的 API 参数名
+            found = False
+            for group in AVAILABLE_FIELDS.values():
+                if f in group:
+                    api_fields_list.append(group[f].get('api_param', f))
+                    found = True
+                    break
+            if not found:
+                api_fields_list.append(f)
+        
+        hourly_params = ','.join(api_fields_list)
         
         # 构建URL参数
         params = {
@@ -273,8 +285,15 @@ class WeatherService:
                 
                 # 添加每个字段的值
                 for field in fields:
-                    if field in hourly:
-                        record[field] = hourly[field][i]
+                    # 查找字段对应的 API 参数名 (Item 2)
+                    api_key = field
+                    for group in AVAILABLE_FIELDS.values():
+                        if field in group:
+                            api_key = group[field].get('api_param', field)
+                            break
+                            
+                    if api_key in hourly:
+                        record[field] = hourly[api_key][i]
                     else:
                         record[field] = None
                 

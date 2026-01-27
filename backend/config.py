@@ -75,9 +75,8 @@ AVAILABLE_FIELDS = {
         'wind_speed_10m': {'name': '10米风速', 'unit': 'km/h', 'description': '10米高度风速'},
         'wind_direction_10m': {'name': '10米风向', 'unit': '°', 'description': '10米高度风向'},
         'wind_gusts_10m': {'name': '10米阵风', 'unit': 'km/h', 'description': '10米高度阵风'},
-        'wind_speed_80m': {'name': '80米风速', 'unit': 'km/h', 'description': '80米高度风速'},
-        'wind_speed_120m': {'name': '120米风速', 'unit': 'km/h', 'description': '120米高度风速'},
-        'wind_speed_180m': {'name': '180米风速', 'unit': 'km/h', 'description': '180米高度风速'},
+        'wind_speed_100m': {'name': '100米风速', 'unit': 'km/h', 'description': '100米高度风速'},
+        'wind_direction_100m': {'name': '100米风向', 'unit': '°', 'description': '100米高度风向'},
     },
     'radiation': {
         'shortwave_radiation': {'name': '短波辐射', 'unit': 'W/m²', 'description': '短波太阳辐射'},
@@ -86,8 +85,12 @@ AVAILABLE_FIELDS = {
         'direct_normal_irradiance': {'name': '直接法向辐照度', 'unit': 'W/m²', 'description': 'DNI'},
     },
     'other': {
-        'visibility': {'name': '能见度', 'unit': 'm', 'description': '能见度'},
-        'evapotranspiration': {'name': '蒸发蒸腾量', 'unit': 'mm', 'description': 'ET0参考蒸散发'},
+        'evapotranspiration': {
+            'name': '蒸发蒸腾量', 
+            'unit': 'mm', 
+            'description': 'ET0参考蒸散发', 
+            'api_param': 'et0_fao_evapotranspiration'
+        },
         'soil_temperature_0_to_7cm': {'name': '土壤温度', 'unit': '°C', 'description': '0-7cm土壤温度'},
         'soil_moisture_0_to_7cm': {'name': '土壤湿度', 'unit': 'm³/m³', 'description': '0-7cm土壤湿度'},
     }
