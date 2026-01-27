@@ -27,7 +27,8 @@ function initDataManagement() {
         'downloadAllCitiesBtn': handleDownloadAllCities,
         'checkCompletenessBtn': handleCheckCompleteness,
         'refreshStatsBtn': loadDataStatistics,
-        'exportBulkDataBtn': handleExportBulk
+        'exportBulkDataBtn': handleExportBulk,
+        'clearAllCitiesBtn': handleClearAllCities
     };
 
     Object.entries(bindings).forEach(([id, handler]) => {
@@ -84,9 +85,9 @@ function switchTab(tabName) {
 }
 
 function populateManagementCities() {
-    // 使用 CommonUtils 渲染多选列表
-    CommonUtils.renderCityCheckboxes('downloadCitySelect', 'dl-city-checkbox', 'dlCity');
-    CommonUtils.renderCityCheckboxes('checkCitySelect', 'check-city-checkbox', 'checkCity');
+    // 使用 CommonUtils 渲染多选列表 (Item 4)
+    CommonUtils.renderCityCheckboxes('downloadCitySelect', 'dl-city-checkbox', 'dlCity', true);
+    CommonUtils.renderCityCheckboxes('checkCitySelect', 'check-city-checkbox', 'checkCity', true);
 }
 
 async function handleBatchDownload() {
@@ -595,7 +596,7 @@ function renderManagedCities(cities) {
 }
 
 /**
- * 移除城市
+ * 移除单个城市
  */
 async function handleRemoveCity(cityId) {
     if (!confirm('确定要从默认列表中移除该城市吗？')) return;
@@ -612,9 +613,28 @@ async function handleRemoveCity(cityId) {
     }
 }
 
+/**
+ * 清空所有城市
+ */
+async function handleClearAllCities() {
+    if (!confirm('确定要移除当前列表中的所有城市吗？此操作无法撤销。')) return;
+
+    try {
+        const response = await api.clearCities();
+        if (response.code === 200) {
+            await loadManagedCities();
+            if (typeof loadCities === 'function') await loadCities();
+            populateManagementCities();
+        }
+    } catch (error) {
+        alert('清空失败: ' + error.message);
+    }
+}
+
 // 暴露出这些函数供 onclick 使用
 window.handleAddCity = handleAddCity;
 window.handleRemoveCity = handleRemoveCity;
+window.handleClearAllCities = handleClearAllCities;
 
 // 在页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {

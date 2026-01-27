@@ -268,6 +268,14 @@ class APIClient {
     async removeCity(cityId) {
         return this.request(`/cities/remove/${cityId}`, { method: 'DELETE' });
     }
+
+    /**
+     * 清空所有管理城市
+     * @returns {Promise} 结果
+     */
+    async clearCities() {
+        return this.request('/cities/clear', { method: 'DELETE' });
+    }
 }
 
 // 创建全局API客户端实例

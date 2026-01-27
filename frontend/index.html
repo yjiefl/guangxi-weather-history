@@ -313,7 +313,11 @@
 
                     <div class="form-row" style="margin-top: 20px;">
                         <div class="form-group full-width">
-                            <label>当前展示的默认城市列表</label>
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <label style="margin-bottom: 0;">当前展示的默认城市列表</label>
+                                <button id="clearAllCitiesBtn" class="btn btn-tiny btn-danger">全部删除</button>
+                            </div>
                             <div id="managedCityList" class="managed-city-list">
                                 <!-- 已添加城市列表 -->
                                 <p style="color: rgba(255,255,255,0.5);">加载中...</p>

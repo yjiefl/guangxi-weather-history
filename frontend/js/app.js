@@ -74,37 +74,8 @@ async function loadCities() {
         const response = await api.getCities();
         appState.cities = response.data;
 
-        const citySelect = document.getElementById('citySelect');
-
-        // 1. 先渲染城市列表 (这会清空内容)
-        CommonUtils.renderCityCheckboxes('citySelect', 'city-checkbox-input', 'city');
-
-        // 2. 在顶部插入"全选"选项
-        const selectAllHtml = `
-            <div class="city-checkbox" id="selectAllContainer">
-                <input type="checkbox" id="selectAllCities" />
-                <label for="selectAllCities"><strong>全选所有城市</strong></label>
-            </div>
-            <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 8px 0;"></div>
-        `;
-        citySelect.insertAdjacentHTML('afterbegin', selectAllHtml);
-
-        // 绑定全选事件
-        const selectAllCities = document.getElementById('selectAllCities');
-        if (selectAllCities) {
-            selectAllCities.addEventListener('change', function (e) {
-                const checkboxes = document.querySelectorAll('.city-checkbox-input');
-                checkboxes.forEach(cb => {
-                    cb.checked = e.target.checked;
-                });
-                updateSelectedCities();
-            });
-        }
-
-        // 绑定城市选择事件
-        document.querySelectorAll('.city-checkbox-input').forEach(checkbox => {
-            checkbox.addEventListener('change', updateSelectedCities);
-        });
+        // 统一渲染逻辑 (Item 4)
+        CommonUtils.renderCityCheckboxes('citySelect', 'city-checkbox-input', 'city', true);
 
         console.log(`加载了 ${appState.cities.length} 个城市`);
     } catch (error) {

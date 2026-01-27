@@ -139,6 +139,18 @@ def remove_city(city_id):
         logger.error(f"移除城市失败: {e}")
         return jsonify({'code': 500, 'message': str(e), 'data': None})
 
+@api_bp.route('/cities/clear', methods=['DELETE'])
+def clear_cities():
+    """移除所有城市 (设置为不启用)"""
+    try:
+        cities = city_manager.get_all_cities()
+        for city in cities:
+            city_manager.update_city_status(city['id'], False)
+        return jsonify({'code': 200, 'message': '清空城市列表成功', 'data': None})
+    except Exception as e:
+        logger.error(f"清空城市列表失败: {e}")
+        return jsonify({'code': 500, 'message': str(e), 'data': None})
+
 
 @api_bp.route('/fields', methods=['GET'])
 def get_fields():
