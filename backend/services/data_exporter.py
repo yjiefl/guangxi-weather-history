@@ -219,6 +219,7 @@ class DataExporter:
             'evapotranspiration': '蒸发蒸腾量(mm)',
             'soil_temperature_0_to_7cm': '土壤温度(°C)',
             'soil_moisture_0_to_7cm': '土壤湿度(m³/m³)',
+            'weather_code': '天气代码',
         }
     
     def _add_summary_sheet(self, workbook: Workbook, df: pd.DataFrame):

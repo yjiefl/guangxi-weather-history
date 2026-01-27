@@ -69,6 +69,7 @@ AVAILABLE_FIELDS = {
         'snowfall': {'name': '降雪量', 'unit': 'cm', 'description': '小时降雪量'},
         'surface_pressure': {'name': '地面气压', 'unit': 'hPa', 'description': '地面气压'},
         'cloud_cover': {'name': '云量', 'unit': '%', 'description': '总云量'},
+        'weather_code': {'name': '天气情况', 'unit': '代码', 'description': 'WMO天气代码'},
     },
     'wind': {
         'wind_speed_10m': {'name': '10米风速', 'unit': 'km/h', 'description': '10米高度风速'},
@@ -100,4 +101,5 @@ DEFAULT_FIELDS = [
     'wind_speed_10m',
     'wind_direction_10m',
     'shortwave_radiation',
+    'weather_code',
 ]

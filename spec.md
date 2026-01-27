@@ -48,8 +48,8 @@
 #### 其他数据
 - **能见度** (visibility): 能见度，单位：m
 - **蒸发蒸腾量** (evapotranspiration): ET0参考蒸散发，单位：mm
-- **土壤温度** (soil_temperature_0_to_7cm): 0-7cm土壤温度，单位：°C
 - **土壤湿度** (soil_moisture_0_to_7cm): 0-7cm土壤湿度，单位：m³/m³
+- **天气代码** (weather_code): WMO天气代码，描述天气情况
 
 ## 2. 技术架构与选型
 
@@ -139,6 +139,7 @@ erDiagram
         REAL direct_normal_irradiance "直接法向辐照度W/m²"
         REAL visibility "能见度m"
         REAL evapotranspiration "蒸发蒸腾量mm"
+        REAL weather_code "天气代码"
         TEXT created_at "创建时间"
     }
     

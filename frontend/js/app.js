@@ -3,14 +3,38 @@
  * 处理用户交互和数据展示
  */
 
-// 全局状态
 const appState = {
     cities: [],
     fields: {},
     currentData: null,
-    selectedCities: [],  // 改为数组支持多选
+    selectedCities: [],
     selectedFields: [],
-    multiCityMode: false  // 多城市模式标志
+    multiCityMode: false,
+    filterCity: 'all',
+    filterDate: 'all'
+};
+
+// WMO 天气代码映射
+const weatherCodeMap = {
+    0: { name: '晴朗', icon: '☀️' },
+    1: { name: '晴到多云', icon: '🌤️' },
+    2: { name: '多云', icon: '⛅' },
+    3: { name: '阴天', icon: '☁️' },
+    45: { name: '雾', icon: '🌫️' },
+    48: { name: '沉积雾', icon: '🌫️' },
+    51: { name: '小毛毛雨', icon: '🌦️' },
+    53: { name: '毛毛雨', icon: '🌦️' },
+    55: { name: '大毛毛雨', icon: '🌦️' },
+    61: { name: '小雨', icon: '🌧️' },
+    63: { name: '中雨', icon: '🌧️' },
+    65: { name: '大雨', icon: '🌧️' },
+    71: { name: '小雪', icon: '🌨️' },
+    73: { name: '中雪', icon: '🌨️' },
+    75: { name: '大雪', icon: '🌨️' },
+    80: { name: '阵雨', icon: '🌦️' },
+    81: { name: '中阵雨', icon: '🌦️' },
+    82: { name: '大阵雨', icon: '🌧️' },
+    95: { name: '雷阵雨', icon: '⛈️' },
 };
 
 /**
@@ -215,13 +239,25 @@ function bindEvents() {
             if (confirm('确定要停止并关闭后台服务吗？关闭后网页将无法操作。')) {
                 try {
                     await api.shutdown();
-                    alert('关机命令已发送。');
+                    alert('服务器正在关闭，请关闭此窗口。');
+                    // 标记为脱机
+                    document.querySelector('.status-dot').className = 'status-dot offline';
+                    document.querySelector('.status-text').textContent = '已手动关闭';
                 } catch (e) {
                     alert('关机失败: ' + e.message);
                 }
             }
         });
     }
+
+    // 筛选器事件
+    document.getElementById('cityFilter').addEventListener('change', handleFilterChange);
+    document.getElementById('dateFilter').addEventListener('change', handleFilterChange);
+    document.getElementById('resetFilterBtn').addEventListener('click', () => {
+        document.getElementById('cityFilter').value = 'all';
+        document.getElementById('dateFilter').value = 'all';
+        handleFilterChange();
+    });
 }
 
 /**
@@ -366,6 +402,9 @@ async function handleQuery() {
         document.getElementById('exportExcelBtn').disabled = false;
         document.getElementById('exportCsvBtn').disabled = false;
 
+        // 初始化筛选器
+        populateFilters();
+
         console.log(`查询成功`);
     } catch (error) {
         console.error('查询失败:', error);
@@ -412,14 +451,17 @@ async function handleExport(format) {
  * 显示数据
  */
 function displayData(data) {
+    // 处理过滤后的数据
+    const filteredRecords = applyLocalFilters(data.records);
+
     // 显示统计卡片
     displayStatsCards(data.summary);
 
     // 显示图表
-    displayCharts(data.records);
+    displayCharts(filteredRecords);
 
     // 显示数据表格
-    displayDataTable(data.records);
+    displayDataTable(filteredRecords);
 
     // 显示数据展示区
     showDataDisplay();
@@ -564,10 +606,13 @@ function displayDataTable(records) {
 
         keys.forEach(key => {
             const td = document.createElement('td');
-            const value = record[key];
+            let value = record[key];
 
             if (value === null || value === undefined) {
                 td.textContent = '-';
+            } else if (key === 'weather_code') {
+                const weatherInfo = weatherCodeMap[Math.floor(value)] || { name: `代码 ${value}`, icon: '' };
+                td.textContent = `${weatherInfo.icon} ${weatherInfo.name}`;
             } else if (typeof value === 'number') {
                 td.textContent = value.toFixed(2);
             } else {
@@ -630,31 +675,35 @@ function showError(message) {
     alert(message);
 }
 
-/**
- * 显示多城市对比数据
- */
 function displayComparisonData(data) {
     console.log('显示对比数据:', data);
 
     // 显示对比统计卡片
     displayComparisonStats(data.comparison);
 
-    // 显示对比图表
-    displayComparisonCharts(data.details);
-
     // 显示对比表格
     displayComparisonTable(data.details);
+
+    // 处理过滤
+    const filteredDetails = applyComparisonFilters(data.details);
+    if (filteredDetails.length === 1) {
+        // 如果只过滤出一个城市，则显示该城市的详细趋势
+        displayCharts(filteredDetails[0].hourly_data);
+    } else {
+        // 否则显示对比图表
+        displayComparisonCharts(filteredDetails);
+    }
 
     // 显示数据展示区
     showDataDisplay();
 }
 
-/**
- * 显示对比统计卡片
- */
 function displayComparisonStats(comparison) {
     const statsCards = document.getElementById('statsCards');
     statsCards.innerHTML = '';
+
+    // 计算城市数量
+    const cityCount = Object.keys(comparison).length;
 
     // 添加对比说明
     const headerCard = document.createElement('div');
@@ -664,22 +713,22 @@ function displayComparisonStats(comparison) {
         <div class="stat-card-header">
             <div class="stat-label"><strong>多城市对比分析</strong></div>
         </div>
-        <div class="stat-details">正在对比 ${comparison.city_count} 个城市的天气数据</div>
+        <div class="stat-details">正在对比 ${cityCount} 个城市的天气数据</div>
     `;
     statsCards.appendChild(headerCard);
 
     // 显示各城市的平均温度对比
-    if (comparison.temperature) {
-        Object.entries(comparison.temperature).forEach(([cityName, temp]) => {
+    Object.entries(comparison).forEach(([cityName, summary]) => {
+        if (summary.temperature) {
             statsCards.appendChild(createStatCard(
                 `${cityName} - 平均温度`,
-                temp.avg,
+                summary.temperature.avg,
                 '°C',
-                `最高: ${temp.max}°C, 最低: ${temp.min}°C`,
+                `最高: ${summary.temperature.max}°C, 最低: ${summary.temperature.min}°C`,
                 'temperature'
             ));
-        });
-    }
+        }
+    });
 }
 
 /**
@@ -784,6 +833,88 @@ const data_analyzer = {
         return summary;
     }
 };
+
+/**
+ * 初始化筛选器
+ */
+function populateFilters() {
+    const cityFilter = document.getElementById('cityFilter');
+    const dateFilter = document.getElementById('dateFilter');
+
+    // 填充区域/城市
+    cityFilter.innerHTML = '<option value="all">所有选定城市</option>';
+    if (appState.multiCityMode) {
+        appState.selectedCities.forEach(id => {
+            const city = appState.cities.find(c => c.id === id);
+            if (city) {
+                const opt = document.createElement('option');
+                opt.value = city.name;
+                opt.textContent = city.name;
+                cityFilter.appendChild(opt);
+            }
+        });
+    }
+
+    // 填充日期
+    dateFilter.innerHTML = '<option value="all">所有日期范围</option>';
+    const dates = new Set();
+    if (appState.multiCityMode) {
+        appState.currentData.details.forEach(city => {
+            city.hourly_data.forEach(r => dates.add(r.datetime.split('T')[0]));
+        });
+    } else {
+        appState.currentData.records.forEach(r => dates.add(r.datetime.split('T')[0]));
+    }
+
+    Array.from(dates).sort().forEach(date => {
+        const opt = document.createElement('option');
+        opt.value = date;
+        opt.textContent = date;
+        dateFilter.appendChild(opt);
+    });
+}
+
+/**
+ * 应用本地过滤逻辑
+ */
+function applyLocalFilters(records) {
+    let filtered = [...records];
+    if (appState.filterDate !== 'all') {
+        filtered = filtered.filter(r => r.datetime.startsWith(appState.filterDate));
+    }
+    return filtered;
+}
+
+/**
+ * 应用对比过滤逻辑
+ */
+function applyComparisonFilters(details) {
+    let filtered = [...details];
+    if (appState.filterCity !== 'all') {
+        filtered = filtered.filter(c => c.city_name === appState.filterCity);
+    }
+    if (appState.filterDate !== 'all') {
+        filtered = filtered.map(c => ({
+            ...c,
+            hourly_data: c.hourly_data.filter(r => r.datetime.startsWith(appState.filterDate))
+        }));
+    }
+    return filtered;
+}
+
+/**
+ * 处理过滤变化
+ */
+function handleFilterChange() {
+    appState.filterCity = document.getElementById('cityFilter').value;
+    appState.filterDate = document.getElementById('dateFilter').value;
+
+    if (appState.multiCityMode) {
+        displayComparisonData(appState.currentData);
+    } else {
+        displayData(appState.currentData);
+    }
+}
 
 // 页面加载完成后初始化应用
 document.addEventListener('DOMContentLoaded', initApp);

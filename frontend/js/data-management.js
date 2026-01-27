@@ -61,36 +61,39 @@ function switchTab(tabName) {
     });
 }
 
-/**
- * 填充管理面板的城市下拉框
- */
 function populateManagementCities() {
-    const downloadCity = document.getElementById('downloadCity');
+    const downloadCitySelect = document.getElementById('downloadCitySelect');
     const checkCity = document.getElementById('checkCity');
 
     if (appState.cities.length > 0) {
+        // 填充下载城市（多选）
+        downloadCitySelect.innerHTML = '';
+        appState.cities.forEach(city => {
+            const div = document.createElement('div');
+            div.className = 'field-checkbox';
+            div.innerHTML = `
+                <input type="checkbox" id="dlCity_${city.id}" value="${city.id}" class="dl-city-checkbox">
+                <label for="dlCity_${city.id}">${city.name}</label>
+            `;
+            downloadCitySelect.appendChild(div);
+        });
+
+        // 填充检查城市（单选）
         const options = appState.cities.map(city =>
             `<option value="${city.id}">${city.name} (${city.region})</option>`
         ).join('');
-
-        downloadCity.innerHTML = '<option value="">请选择城市</option>' + options;
         checkCity.innerHTML = '<option value="">请选择城市</option>' + options;
     }
 }
 
-/**
- * 处理批量下载
- */
-/**
- * 处理批量下载
- */
 async function handleBatchDownload() {
-    const cityId = parseInt(document.getElementById('downloadCity').value);
+    const selectedCheckboxes = document.querySelectorAll('.dl-city-checkbox:checked');
+    const cityIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
     const startDateStr = document.getElementById('downloadStartDate').value;
     const endDateStr = document.getElementById('downloadEndDate').value;
 
-    if (!cityId || !startDateStr || !endDateStr) {
-        showResultMessage('downloadResult', '请填写所有字段', 'error');
+    if (cityIds.length === 0 || !startDateStr || !endDateStr) {
+        showResultMessage('downloadResult', '请选择至少一个城市并填写日期范围', 'error');
         return;
     }
 
@@ -109,35 +112,41 @@ async function handleBatchDownload() {
     resultMsg.style.display = 'none';
 
     try {
-        // 将时间范围分割成月份
         const chunks = segmentDatesByMonth(startDateStr, endDateStr);
-        downloadState.totalChunks = chunks.length;
+        downloadState.totalChunks = cityIds.length * chunks.length;
         downloadState.completedChunks = 0;
 
-        const fields = appState.selectedFields.length > 0 ? appState.selectedFields : ["temperature_2m", "relative_humidity_2m", "shortwave_radiation", "wind_speed_10m"];
+        const fields = appState.selectedFields.length > 0 ? appState.selectedFields : [
+            "temperature_2m", "relative_humidity_2m", "shortwave_radiation",
+            "wind_speed_10m", "precipitation", "weather_code"
+        ];
 
-        for (const chunk of chunks) {
-            if (downloadState.cancelRequested) {
-                throw new Error('下载已由用户取消');
+        for (const cityId of cityIds) {
+            const city = appState.cities.find(c => c.id === cityId);
+
+            for (const chunk of chunks) {
+                if (downloadState.cancelRequested) {
+                    throw new Error('下载已由用户取消');
+                }
+
+                updateDownloadProgress(
+                    `正在下载 ${city.name}: ${chunk.start} 至 ${chunk.end}`,
+                    (downloadState.completedChunks / downloadState.totalChunks) * 100
+                );
+
+                await api.post('/data/batch-download', {
+                    city_id: cityId,
+                    start_date: chunk.start,
+                    end_date: chunk.end,
+                    fields: fields
+                });
+
+                downloadState.completedChunks++;
             }
-
-            updateDownloadProgress(
-                `正在下载: ${chunk.start} 至 ${chunk.end}`,
-                (downloadState.completedChunks / downloadState.totalChunks) * 100
-            );
-
-            await api.post('/data/batch-download', {
-                city_id: cityId,
-                start_date: chunk.start,
-                end_date: chunk.end,
-                fields: fields
-            });
-
-            downloadState.completedChunks++;
         }
 
         updateDownloadProgress('下载完成！', 100);
-        showResultMessage('downloadResult', `✓ 成功下载并保存了 ${downloadState.totalChunks} 个时间段的数据`, 'success');
+        showResultMessage('downloadResult', `✓ 成功下载并保存了 ${cityIds.length} 个城市的历史数据`, 'success');
         loadDataStatistics();
 
     } catch (error) {
@@ -145,14 +154,10 @@ async function handleBatchDownload() {
     } finally {
         downloadState.isDownloading = false;
         btn.disabled = false;
-        btn.innerHTML = `
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z" fill="currentColor"/>
-            </svg>
-            下载并保存到数据库
-        `;
         setTimeout(() => {
-            progressContainer.style.display = 'none';
+            if (!downloadState.isDownloading) {
+                progressContainer.style.display = 'none';
+            }
         }, 3000);
     }
 }

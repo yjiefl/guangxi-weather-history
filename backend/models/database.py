@@ -107,11 +107,20 @@ class DatabaseManager:
                     evapotranspiration REAL,
                     soil_temperature_0_to_7cm REAL,
                     soil_moisture_0_to_7cm REAL,
+                    weather_code REAL,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (city_id) REFERENCES city_config(id),
                     UNIQUE(city_id, datetime)
                 )
             ''')
+            
+            # 确保老数据库也有 weather_code 列
+            try:
+                cursor.execute('ALTER TABLE weather_data ADD COLUMN weather_code REAL')
+                logger.info("添加 weather_code 列成功")
+            except sqlite3.OperationalError:
+                # 已经存在或者是其他错误
+                pass
             
             # 创建API缓存表
             cursor.execute('''
