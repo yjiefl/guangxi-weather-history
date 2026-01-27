@@ -16,46 +16,45 @@ const CommonUtils = {
             return;
         }
 
-        // 添加全选 (Item 4)
+        // 添加全选
         if (includeSelectAll) {
-            const selectAllId = `selectAll_${prefix}`;
+            const selectAllId = `selectAll_${prefix}_${containerId}`;
             const selectAllDiv = document.createElement('div');
             selectAllDiv.id = 'selectAllContainer';
+            selectAllDiv.className = 'select-all-box';
             selectAllDiv.innerHTML = `
                 <input type="checkbox" id="${selectAllId}">
                 <label for="${selectAllId}"><strong>全选</strong></label>
             `;
             container.appendChild(selectAllDiv);
 
-            // 联动逻辑
-            setTimeout(() => {
-                const selectAllCb = document.getElementById(selectAllId);
-                selectAllCb.addEventListener('change', (e) => {
-                    const cbs = container.querySelectorAll(`.${checkboxClass}`);
-                    cbs.forEach(cb => cb.checked = e.target.checked);
-                    // 触发更新事件 (如果存在)
-                    if (typeof updateSelectedCities === 'function' && containerId === 'citySelect') {
-                        updateSelectedCities();
-                    }
+            const selectAllCb = selectAllDiv.querySelector('input');
+            selectAllCb.addEventListener('change', (e) => {
+                const cbs = container.querySelectorAll(`.${checkboxClass}`);
+                cbs.forEach(cb => {
+                    cb.checked = e.target.checked;
                 });
-            }, 0);
+                // 触发更新
+                if (containerId === 'citySelect' && typeof updateSelectedCities === 'function') {
+                    updateSelectedCities();
+                }
+            });
         }
 
+        // 渲染城市
         appState.cities.forEach(city => {
             const div = document.createElement('div');
             div.className = 'field-checkbox city-checkbox';
+            const cbId = `${prefix}_${city.id}_${containerId}`;
             div.innerHTML = `
-                <input type="checkbox" id="${prefix}_${city.id}" value="${city.id}" class="${checkboxClass}">
-                <label for="${prefix}_${city.id}">${city.name}</label>
+                <input type="checkbox" id="${cbId}" value="${city.id}" class="${checkboxClass}">
+                <label for="${cbId}">${city.name}</label>
             `;
             container.appendChild(div);
 
-            // 如果是主查询容器，绑定更新事件
-            if (containerId === 'citySelect') {
-                setTimeout(() => {
-                    const cb = div.querySelector('input');
-                    cb.addEventListener('change', updateSelectedCities);
-                }, 0);
+            const cb = div.querySelector('input');
+            if (containerId === 'citySelect' && typeof updateSelectedCities === 'function') {
+                cb.addEventListener('change', updateSelectedCities);
             }
         });
     },

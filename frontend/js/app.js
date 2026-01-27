@@ -483,7 +483,7 @@ function displayStatsCards(summary) {
             '太阳辐射',
             summary.solar_radiation.avg,
             'W/m²',
-            `总计: ${summary.solar_radiation.total_kwh.toFixed(2)} kWh/m²`,
+            `总计: ${summary.solar_radiation.total_mj.toFixed(2)} MJ/m²`,
             'radiation'
         ));
     }

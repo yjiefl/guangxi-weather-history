@@ -100,6 +100,7 @@ class DataAnalyzer:
                     total_sum = radiation_data.sum()
                     summary['solar_radiation'] = {
                         'total': round(total_sum, 2),
+                        'total_mj': round(total_sum * 0.0036, 2),  # Wh/m² 转换为 MJ/m²
                         'total_kwh': round(total_sum / 1000, 2),  # 转换为kWh/m²
                         'avg': round(radiation_data.mean(), 2),
                         'max': round(radiation_data.max(), 2)

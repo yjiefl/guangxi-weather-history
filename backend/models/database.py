@@ -45,7 +45,7 @@ class DatabaseManager:
     def connect(self):
         """建立数据库连接"""
         try:
-            self.connection = sqlite3.connect(self.db_path)
+            self.connection = sqlite3.connect(self.db_path, check_same_thread=False)
             self.connection.row_factory = sqlite3.Row  # 使结果可以通过列名访问
             logger.info("数据库连接成功")
         except sqlite3.Error as e:

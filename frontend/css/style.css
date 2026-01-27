@@ -108,9 +108,15 @@ body {
     background-clip: text;
 }
 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
 .nav {
     display: flex;
-    gap: var(--spacing-md);
+    gap: 16px;
 }
 
 .nav-link {
@@ -586,6 +592,7 @@ body {
     background: rgba(0, 0, 0, 0.2);
     padding: 8px;
     border-radius: var(--border-radius);
+    margin-bottom: 12px;
 }
 
 .quick-dates .btn-tiny {
@@ -595,6 +602,7 @@ body {
     padding: 6px 12px;
     font-size: 0.75rem;
     font-weight: 600;
+    border: 0.5px solid rgba(255, 255, 255, 0.1);
 }
 
 .quick-dates .btn-tiny:hover {
@@ -602,38 +610,59 @@ body {
     color: white;
 }
 
-/* 城市选择逻辑优化 (Apple Chip Set) */
+/* 城市选择逻辑优化 (Apple Chip Set) - Item 2 & 4 */
 .city-selector-compact {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)) !important;
-    gap: 10px !important;
-    padding: 16px !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 12px !important;
+    padding: 20px !important;
     background: rgba(255, 255, 255, 0.03) !important;
     border-radius: var(--border-radius-lg) !important;
     border: 0.5px solid var(--border-color) !important;
+    min-height: 60px;
+}
+
+/* 城市 Checkbox 样式 */
+.city-checkbox {
+    margin: 0 !important;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.city-checkbox:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.12) !important;
 }
 
 /* 全选容器样式 */
 #selectAllContainer {
-    grid-column: 1 / -1;
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 14px;
-    background: rgba(255, 255, 255, 0.08);
+    padding: 8px 16px;
+    background: rgba(0, 122, 255, 0.15);
+    border: 0.5px solid rgba(0, 122, 255, 0.3);
     border-radius: var(--border-radius-pill);
-    margin-bottom: 8px;
-    width: fit-content;
+    margin-right: 8px;
+    cursor: pointer;
+    user-select: none;
+}
+
+#selectAllContainer:hover {
+    background: rgba(0, 122, 255, 0.25);
 }
 
 #selectAllContainer label {
-    font-size: 0.875rem;
-    color: var(--color-primary);
+    font-size: 0.8125rem;
+    color: #007aff;
     font-weight: 700;
+    cursor: pointer;
 }
 
 #selectAllContainer input[type="checkbox"] {
     accent-color: var(--color-primary);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
 }
 
 /* 响应式设计 */
