@@ -195,11 +195,9 @@ class DataExporter:
                 if fields is None or c in fields:
                     final_cols.append(c)
         
-        # 处理未包含在 core_order 中的其他字段
-        for c in df.columns:
-            if c not in final_cols and c not in ['datetime', 'id', 'city_id', 'created_at', 'datetime_dt']:
-                final_cols.append(c)
-                
+        # 严格限制字段：只导出 core_order 中定义的或明确请求的字段 (Item 2 & 13)
+        # 不再通过循环 df.columns 来添加数据库中多余的空闲字段（如已弃用的 80m 风速等）
+        
         df = df[final_cols]
         
         # 重命名列为中文
@@ -223,7 +221,7 @@ class DataExporter:
             'date': '日期',
             'time': '时间',
             'datetime': '日期时间',
-           'temperature_2m': '温度(°C)',
+            'temperature_2m': '温度(°C)',
             'relative_humidity_2m': '相对湿度(%)',
             'dew_point_2m': '露点温度(°C)',
             'precipitation': '降水量(mm)',
@@ -236,14 +234,10 @@ class DataExporter:
             'wind_gusts_10m': '10米阵风(km/h)',
             'wind_speed_100m': '100米风速(km/h)',
             'wind_direction_100m': '100米风向(°)',
-            'wind_speed_80m': '80米风速(km/h)',
-            'wind_speed_120m': '120米风速(km/h)',
-            'wind_speed_180m': '180米风速(km/h)',
             'shortwave_radiation': '短波辐射(W/m²)',
             'direct_radiation': '直接辐射(W/m²)',
             'diffuse_radiation': '散射辐射(W/m²)',
             'direct_normal_irradiance': '直接法向辐照度(W/m²)',
-            'visibility': '能见度(m)',
             'evapotranspiration': '蒸发蒸腾量(mm)',
             'soil_temperature_0_to_7cm': '土壤温度(°C)',
             'soil_moisture_0_to_7cm': '土壤湿度(m³/m³)',
@@ -340,7 +334,9 @@ class DataExporter:
             ]
             for col in sum_cols:
                 if col in daily_df.columns:
+                    # 确保是按日期和城市分组重新计算总和
                     daily_sum = df.groupby(group_cols)[col].sum().reset_index()
+                    # 按照索引对齐，将均值替换为总和
                     daily_df[col] = daily_sum[col]
             
             # 写入数据
