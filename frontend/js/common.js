@@ -20,8 +20,8 @@ const CommonUtils = {
         if (includeSelectAll) {
             const selectAllId = `selectAll_${prefix}_${containerId}`;
             const selectAllDiv = document.createElement('div');
-            selectAllDiv.id = 'selectAllContainer';
-            selectAllDiv.className = 'select-all-box';
+            // selectAllDiv.id = 'selectAllContainer'; // Remove duplicate ID
+            selectAllDiv.className = 'select-all-box'; // Ensure class helps with styling
             selectAllDiv.innerHTML = `
                 <input type="checkbox" id="${selectAllId}">
                 <label for="${selectAllId}"><strong>全选</strong></label>

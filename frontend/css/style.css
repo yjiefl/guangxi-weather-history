@@ -396,6 +396,8 @@ body {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 16px;
+    margin-bottom: 40px;
+    /* 增加与图表的间距 */
 }
 
 .stat-card {
@@ -634,7 +636,8 @@ body {
 }
 
 /* 全选容器样式 */
-#selectAllContainer {
+/* 全选容器样式 */
+.select-all-box {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -647,18 +650,18 @@ body {
     user-select: none;
 }
 
-#selectAllContainer:hover {
+.select-all-box:hover {
     background: rgba(0, 122, 255, 0.25);
 }
 
-#selectAllContainer label {
+.select-all-box label {
     font-size: 0.8125rem;
     color: #007aff;
     font-weight: 700;
     cursor: pointer;
 }
 
-#selectAllContainer input[type="checkbox"] {
+.select-all-box input[type="checkbox"] {
     accent-color: var(--color-primary);
     width: 16px;
     height: 16px;
