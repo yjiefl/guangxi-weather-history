@@ -385,6 +385,12 @@ body {
     background: linear-gradient(135deg, #0ea5e9, #0284c7);
 }
 
+.stat-icon.weather {
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    font-size: 1.5rem;
+    color: white;
+}
+
 .stat-icon svg {
     width: 24px;
     height: 24px;
@@ -794,7 +800,7 @@ body {
 }
 
 .btn-tiny {
-    padding: 4px 10px;
+    padding: 6px 12px;
     font-size: 0.75rem;
     background: var(--bg-secondary);
     border: 1px solid var(--border-color);
@@ -802,6 +808,11 @@ body {
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    min-height: 32px;
 }
 
 .btn-tiny:hover {
@@ -809,6 +820,25 @@ body {
     color: white;
     border-color: var(--color-primary);
     transform: translateY(-1px);
+}
+
+#shutdownBtn {
+    width: 38px !important;
+    height: 38px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    border: none !important;
+    background: linear-gradient(135deg, var(--color-danger), #b91c1c) !important;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
+    cursor: pointer;
+}
+
+#shutdownBtn:hover {
+    transform: scale(1.1) !important;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
 }
 
 /* 进度条样式 */

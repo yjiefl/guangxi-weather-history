@@ -92,25 +92,8 @@ async function loadCities() {
         separator.style.margin = '8px 0';
         citySelect.appendChild(separator);
 
-        // 添加城市复选框
-        appState.cities.forEach(city => {
-            const div = document.createElement('div');
-            div.className = 'city-checkbox';
-
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = `city_${city.id}`;
-            checkbox.value = city.id;
-            checkbox.className = 'city-checkbox-input';
-
-            const label = document.createElement('label');
-            label.htmlFor = `city_${city.id}`;
-            label.textContent = `${city.name} (${city.region})`;
-
-            div.appendChild(checkbox);
-            div.appendChild(label);
-            citySelect.appendChild(div);
-        });
+        // 使用 CommonUtils 渲染城市列表
+        CommonUtils.renderCityCheckboxes('citySelect', 'city-checkbox-input', 'city');
 
         // 绑定全选事件
         document.getElementById('selectAllCities').addEventListener('change', function (e) {
@@ -137,8 +120,7 @@ async function loadCities() {
  * 更新选中的城市列表
  */
 function updateSelectedCities() {
-    const checkboxes = document.querySelectorAll('.city-checkbox-input:checked');
-    appState.selectedCities = Array.from(checkboxes).map(cb => parseInt(cb.value));
+    appState.selectedCities = CommonUtils.getSelectedCityIds('city-checkbox-input');
     appState.multiCityMode = appState.selectedCities.length > 1;
 
     // 更新UI提示
@@ -232,22 +214,54 @@ function bindEvents() {
         });
     });
 
-    // 停止服务按钮
+    // 停止服务按钮 (采用两步式点击，避免弹窗拦截)
     const shutdownBtn = document.getElementById('shutdownBtn');
+    let shutdownArmed = false;
+    let armedTimer = null;
+
     if (shutdownBtn) {
-        shutdownBtn.addEventListener('click', async () => {
-            if (confirm('确定要停止并关闭后台服务吗？关闭后网页将无法操作。')) {
+        shutdownBtn.onclick = async () => {
+            if (!shutdownArmed) {
+                // 第一步：激活确认状态
+                shutdownArmed = true;
+                shutdownBtn.style.transform = 'scale(1.2) rotate(10deg)';
+                shutdownBtn.style.background = 'linear-gradient(135deg, #ff0000, #ff4d4d)';
+                shutdownBtn.title = '再次点击确定关闭';
+
+                // 提示文字
+                const originalText = document.querySelector('.status-text').textContent;
+                document.querySelector('.status-text').textContent = '⚠️ 再次点击确认关闭';
+                document.querySelector('.status-text').style.color = '#ff4d4d';
+
+                // 3秒后还原
+                armedTimer = setTimeout(() => {
+                    shutdownArmed = false;
+                    shutdownBtn.style.transform = '';
+                    shutdownBtn.style.background = '';
+                    shutdownBtn.title = '停止并关闭后台服务';
+                    document.querySelector('.status-text').textContent = originalText;
+                    document.querySelector('.status-text').style.color = '';
+                }, 3000);
+            } else {
+                // 第二步：执行关闭
+                clearTimeout(armedTimer);
+                document.querySelector('.status-dot').className = 'status-dot offline';
+                document.querySelector('.status-text').textContent = '正在关机...';
+
+                // 禁用交互
+                document.body.style.opacity = '0.5';
+                document.body.style.pointerEvents = 'none';
+
                 try {
-                    await api.shutdown();
-                    alert('服务器正在关闭，请关闭此窗口。');
-                    // 标记为脱机
-                    document.querySelector('.status-dot').className = 'status-dot offline';
-                    document.querySelector('.status-text').textContent = '已手动关闭';
+                    api.shutdown();
+                    setTimeout(() => {
+                        window.location.reload(); // 重载页面以显示断开连接状态
+                    }, 1500);
                 } catch (e) {
-                    alert('关机失败: ' + e.message);
+                    console.log('信号已发出');
                 }
             }
-        });
+        };
     }
 
     // 筛选器事件
@@ -307,18 +321,28 @@ function initDateConstraints() {
 function startHealthCheck() {
     const statusDot = document.querySelector('.status-dot');
     const statusText = document.querySelector('.status-text');
+    const queryBtn = document.getElementById('queryBtn');
+    const exportBtns = [document.getElementById('exportExcelBtn'), document.getElementById('exportCsvBtn')];
 
-    setInterval(async () => {
+    const check = async () => {
         const isOnline = await api.ping();
         if (isOnline) {
             statusDot.className = 'status-dot online';
             statusText.textContent = '后端连接正常';
+            if (queryBtn) queryBtn.disabled = false;
+            exportBtns.forEach(btn => { if (btn) btn.disabled = false; });
         } else {
             statusDot.className = 'status-dot offline';
             statusText.textContent = '连接已断开';
-            // 可以选择在这里显示更显眼的错误提示
+            if (queryBtn) queryBtn.disabled = true;
+            exportBtns.forEach(btn => { if (btn) btn.disabled = true; });
         }
-    }, 5000);
+    };
+
+    // 初始检查
+    check();
+    // 每3秒检查一次
+    setInterval(check, 3000);
 }
 
 /**
@@ -343,19 +367,14 @@ async function handleQuery() {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
 
-    // 验证输入
+    const validation = CommonUtils.validateDateRange(startDate, endDate);
     if (appState.selectedCities.length === 0) {
         showError('请至少选择一个城市');
         return;
     }
 
-    if (!startDate || !endDate) {
-        showError('请选择日期范围');
-        return;
-    }
-
-    if (new Date(startDate) > new Date(endDate)) {
-        showError('开始日期不能晚于结束日期');
+    if (!validation.valid) {
+        showError(validation.message);
         return;
     }
 
@@ -517,24 +536,40 @@ function displayStatsCards(summary) {
             'precipitation'
         ));
     }
+
+    // 天气情况统计
+    if (summary.weather) {
+        const code = summary.weather.most_frequent;
+        const weatherInfo = weatherCodeMap[code] || { name: `代码 ${code}`, icon: '❓' };
+        statsCards.appendChild(createStatCard(
+            '主要天气',
+            weatherInfo.name,
+            '',
+            `最频繁出现的状态`,
+            'weather',
+            weatherInfo.icon
+        ));
+    }
 }
 
 /**
  * 创建统计卡片
  */
-function createStatCard(label, value, unit, details, iconType) {
+function createStatCard(label, value, unit, details, iconType, customIcon) {
     const card = document.createElement('div');
     card.className = 'stat-card';
+
+    const displayValue = typeof value === 'number' ? value.toFixed(2) : value;
 
     card.innerHTML = `
         <div class="stat-card-header">
             <div class="stat-icon ${iconType}">
-                ${getIconSVG(iconType)}
+                ${customIcon || getIconSVG(iconType)}
             </div>
             <div class="stat-label">${label}</div>
         </div>
         <div class="stat-value">
-            ${value.toFixed(2)}
+            ${displayValue}
             <span class="stat-unit">${unit}</span>
         </div>
         <div class="stat-details">${details}</div>
@@ -726,6 +761,20 @@ function displayComparisonStats(comparison) {
                 '°C',
                 `最高: ${summary.temperature.max}°C, 最低: ${summary.temperature.min}°C`,
                 'temperature'
+            ));
+        }
+
+        // 每个城市的天气概况
+        if (summary.weather) {
+            const code = summary.weather.most_frequent;
+            const weatherInfo = weatherCodeMap[code] || { name: `代码 ${code}`, icon: '❓' };
+            statsCards.appendChild(createStatCard(
+                `${cityName} - 主要天气`,
+                weatherInfo.name,
+                '',
+                `总体天气状态`,
+                'weather',
+                weatherInfo.icon
             ));
         }
     });

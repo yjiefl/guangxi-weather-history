@@ -21,17 +21,19 @@ function initDataManagement() {
         });
     });
 
-    // 批量下载按钮
-    document.getElementById('batchDownloadBtn').addEventListener('click', handleBatchDownload);
+    // 按钮事件绑定
+    const bindings = {
+        'batchDownloadBtn': handleBatchDownload,
+        'downloadAllCitiesBtn': handleDownloadAllCities,
+        'checkCompletenessBtn': handleCheckCompleteness,
+        'refreshStatsBtn': loadDataStatistics,
+        'exportBulkDataBtn': handleExportBulk
+    };
 
-    // 下载所有城市按钮
-    document.getElementById('downloadAllCitiesBtn').addEventListener('click', handleDownloadAllCities);
-
-    // 完整性检查按钮
-    document.getElementById('checkCompletenessBtn').addEventListener('click', handleCheckCompleteness);
-
-    // 刷新统计按钮
-    document.getElementById('refreshStatsBtn').addEventListener('click', loadDataStatistics);
+    Object.entries(bindings).forEach(([id, handler]) => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener('click', handler);
+    });
 
     // 取消下载按钮
     document.getElementById('cancelDownloadBtn').addEventListener('click', () => {
@@ -62,22 +64,12 @@ function switchTab(tabName) {
 }
 
 function populateManagementCities() {
-    const downloadCitySelect = document.getElementById('downloadCitySelect');
     const checkCity = document.getElementById('checkCity');
 
-    if (appState.cities.length > 0) {
-        // 填充下载城市（多选）
-        downloadCitySelect.innerHTML = '';
-        appState.cities.forEach(city => {
-            const div = document.createElement('div');
-            div.className = 'field-checkbox';
-            div.innerHTML = `
-                <input type="checkbox" id="dlCity_${city.id}" value="${city.id}" class="dl-city-checkbox">
-                <label for="dlCity_${city.id}">${city.name}</label>
-            `;
-            downloadCitySelect.appendChild(div);
-        });
+    // 使用 CommonUtils 渲染多选列表
+    CommonUtils.renderCityCheckboxes('downloadCitySelect', 'dl-city-checkbox', 'dlCity');
 
+    if (appState.cities.length > 0 && checkCity) {
         // 填充检查城市（单选）
         const options = appState.cities.map(city =>
             `<option value="${city.id}">${city.name} (${city.region})</option>`
@@ -87,13 +79,13 @@ function populateManagementCities() {
 }
 
 async function handleBatchDownload() {
-    const selectedCheckboxes = document.querySelectorAll('.dl-city-checkbox:checked');
-    const cityIds = Array.from(selectedCheckboxes).map(cb => parseInt(cb.value));
+    const cityIds = CommonUtils.getSelectedCityIds('dl-city-checkbox');
     const startDateStr = document.getElementById('downloadStartDate').value;
     const endDateStr = document.getElementById('downloadEndDate').value;
 
-    if (cityIds.length === 0 || !startDateStr || !endDateStr) {
-        showResultMessage('downloadResult', '请选择至少一个城市并填写日期范围', 'error');
+    const validation = CommonUtils.validateDateRange(startDateStr, endDateStr);
+    if (cityIds.length === 0 || !validation.valid) {
+        showResultMessage('downloadResult', cityIds.length === 0 ? '请选择至少一个城市' : validation.message, 'error');
         return;
     }
 
@@ -439,13 +431,59 @@ function displayDataStatistics(data) {
 }
 
 /**
- * 显示结果消息
+ * 处理批量导出完整数据到本地
  */
-function showResultMessage(containerId, message, type = 'success') {
-    const container = document.getElementById(containerId);
-    container.style.display = 'block';
-    container.className = `result-message ${type}`;
-    container.textContent = message;
+async function handleExportBulk() {
+    const cityIds = CommonUtils.getSelectedCityIds('dl-city-checkbox');
+    const startDate = document.getElementById('downloadStartDate').value;
+    const endDate = document.getElementById('downloadEndDate').value;
+
+    const validation = CommonUtils.validateDateRange(startDate, endDate);
+    if (cityIds.length === 0 || !validation.valid) {
+        showResultMessage('downloadResult', cityIds.length === 0 ? '请选择至少一个城市' : validation.message, 'error');
+        return;
+    }
+
+    const btn = document.getElementById('exportBulkDataBtn');
+    btn.disabled = true;
+    const originalText = btn.innerHTML;
+    btn.textContent = '正在导出...';
+
+    try {
+        const response = await fetch(`${api.baseUrl}/data/export-bulk`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                city_ids: cityIds,
+                start_date: startDate,
+                end_date: endDate,
+                format: 'excel'
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || '导出失败');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `批量天气数据_${startDate}_${endDate}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        appendResultToDownload('✓ 导出成功，请在浏览器下载管理中查看', 'success');
+    } catch (error) {
+        showResultMessage('downloadResult', '导出失败: ' + error.message, 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+}
+
+function appendResultToDownload(message, type) {
+    showResultMessage('downloadResult', message, type);
 }
 
 // 在页面加载完成后初始化

@@ -166,14 +166,25 @@ class DataExporter:
             df['date'] = df['datetime_dt'].dt.date
             df['time'] = df['datetime_dt'].dt.strftime('%H:%M')
         
+        # 天气代码转换 (Item 17)
+        if 'weather_code' in df.columns:
+            weather_map = {
+                0: '晴朗', 1: '晴到多云', 2: '多云', 3: '阴天', 45: '雾', 
+                48: '沉积雾', 51: '小毛毛雨', 53: '毛毛雨', 55: '大毛毛雨',
+                61: '小雨', 63: '中雨', 65: '大雨', 71: '小雪', 73: '中雪', 
+                75: '大雪', 80: '阵雨', 81: '中阵雨', 82: '大阵雨', 95: '雷阵雨'
+            }
+            df['weather_code'] = df['weather_code'].map(lambda x: f"{int(x)} ({weather_map.get(int(x), '未知')})" if pd.notnull(x) else x)
+        
         # 如果指定了字段，确保包含我们新增的辅助字段
         if fields:
             available_fields = []
-            if city_name: available_fields.append('city')
-            if 'date' in df.columns: available_fields.append('date')
-            if 'time' in df.columns: available_fields.append('time')
+            # 自动包含辅助字段（如果存在）
+            for helper in ['city', 'date', 'time']:
+                if helper in df.columns:
+                    available_fields.append(helper)
             
-            available_fields.extend([f for f in fields if f in df.columns and f != 'datetime'])
+            available_fields.extend([f for f in fields if f in df.columns and f not in ['datetime', 'city', 'date', 'time']])
             df = df[available_fields]
         
         # 重命名列为中文

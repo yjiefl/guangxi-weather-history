@@ -123,9 +123,27 @@ def shutdown():
     """
     try:
         logger.info("收到关机请求，正在关闭服务...")
-        import os
-        import signal
-        os.kill(os.getpid(), signal.SIGINT)
+        
+        def kill_server():
+            import time
+            import os
+            import signal
+            time.sleep(0.5)  # 等待响应发送
+            logger.info("进程自毁中...")
+            
+            try:
+                # 获取进程组ID并杀掉整个组 (macOS/Unix 适用)
+                # 这样可以确保 Flask 的 Reload 进程及其子进程一并关闭
+                pgid = os.getpgrp()
+                os.killpg(pgid, signal.SIGTERM)
+            except Exception as e:
+                logger.error(f"杀掉进程组失败: {e}")
+                # 兜底：仅杀掉当前进程
+                os._exit(0)
+            
+        import threading
+        threading.Thread(target=kill_server).start()
+        
         return jsonify({
             'code': 200,
             'message': '服务正在关闭...',
@@ -385,6 +403,72 @@ def compare_cities():
             'message': f'对比失败: {str(e)}',
             'data': None
         }), 500
+
+@api_bp.route('/data/export-bulk', methods=['POST'])
+def export_bulk_data():
+    """
+    导出多个城市的完整天气数据
+    """
+    try:
+        data = request.get_json()
+        city_ids = data.get('city_ids', [])
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        export_format = data.get('format', 'excel')
+        
+        if not all([city_ids, start_date, end_date]):
+             return jsonify({
+                'code': 400,
+                'message': '缺少必要参数：city_ids, start_date, end_date',
+                'data': None
+            }), 400
+            
+        all_data = []
+        for city_id in city_ids:
+            city_info = city_manager.get_city_by_id(city_id)
+            if not city_info: continue
+            
+            filters = {
+                'city_id': city_id,
+                'start_date': start_date,
+                'end_date': end_date + ' 23:59:59'
+            }
+            records = weather_service.db_manager.get_weather_data(filters)
+            
+            # 为每条记录添加城市名称
+            for r in records:
+                r['city'] = city_info['city_name']
+            
+            all_data.extend(records)
+            
+        if not all_data:
+            return jsonify({'code': 404, 'message': '选定范围内暂无数据，请先点击下载到数据库', 'data': None}), 404
+            
+        # 导出所有可能的字段（排除ID等内部字段）
+        all_fields = []
+        for cat in AVAILABLE_FIELDS.values():
+            all_fields.extend(cat.keys())
+            
+        filename = f"广西天气数据_批量_{start_date}_{end_date}"
+        
+        if export_format == 'csv':
+            file_bytes = data_exporter.export_to_csv(all_data, filename, all_fields)
+            mimetype = 'text/csv'
+            filename += '.csv'
+        else:
+            file_bytes = data_exporter.export_to_excel(all_data, filename, all_fields, include_summary=True)
+            mimetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+            filename += '.xlsx'
+            
+        return send_file(
+            BytesIO(file_bytes),
+            mimetype=mimetype,
+            as_attachment=True,
+            download_name=filename
+        )
+    except Exception as e:
+        logger.error(f"批量导出数据失败: {e}")
+        return jsonify({'code': 500, 'message': f'导出失败: {str(e)}', 'data': None}), 500
 
 
 @api_bp.route('/stats', methods=['GET'])

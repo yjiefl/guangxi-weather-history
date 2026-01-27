@@ -42,10 +42,11 @@
                         <span class="status-text">后端连接正常</span>
                     </div>
                     <button id="shutdownBtn" class="btn btn-tiny btn-danger" title="停止并关闭后台服务">
-                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"
+                            style="pointer-events: none;">
                             <path
                                 d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z"
-                                fill="currentColor" />
+                                fill="currentColor" style="pointer-events: none;" />
                         </svg>
                     </button>
                     <nav class="nav">
@@ -267,6 +268,13 @@
                         <button id="downloadAllCitiesBtn" class="btn btn-secondary">
                             一键下载所有城市数据
                         </button>
+                        <button id="exportBulkDataBtn" class="btn btn-tiny btn-secondary">
+                            <svg class="btn-icon-tiny" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z" fill="currentColor" />
+                            </svg>
+                            导出选定范围数据到本地 (完整字段)
+                        </button>
                     </div>
                     <div id="downloadProgressContainer" class="progress-box" style="display: none;">
                         <div class="progress-header">
@@ -334,6 +342,7 @@
 
     <!-- JavaScript -->
     <script src="js/api.js"></script>
+    <script src="js/common.js"></script>
     <script src="js/charts.js"></script>
     <script src="js/app.js"></script>
     <script src="js/data-management.js"></script>
