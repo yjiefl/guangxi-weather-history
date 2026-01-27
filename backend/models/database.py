@@ -117,12 +117,26 @@ class DatabaseManager:
             ''')
             
             # 确保老数据库字段完整
+            # 1. 检查 weather_data 字段
             for column in ['weather_code', 'wind_speed_100m', 'wind_direction_100m']:
                 try:
                     cursor.execute(f'ALTER TABLE weather_data ADD COLUMN {column} REAL')
-                    logger.info(f"添加 {column} 列成功")
+                    logger.info(f"添加 weather_data.{column} 列成功")
                 except sqlite3.OperationalError:
                     pass
+            
+            # 2. 检查 city_config 字段 (Item 29)
+            try:
+                cursor.execute('ALTER TABLE city_config ADD COLUMN region TEXT DEFAULT "广西"')
+                logger.info("添加 city_config.region 列成功")
+            except sqlite3.OperationalError:
+                pass
+                
+            try:
+                cursor.execute('ALTER TABLE city_config ADD COLUMN is_active INTEGER DEFAULT 1')
+                logger.info("添加 city_config.is_active 列成功")
+            except sqlite3.OperationalError:
+                pass
             
             # 创建API缓存表
             cursor.execute('''

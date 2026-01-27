@@ -410,7 +410,7 @@ async function handleQuery() {
 
             appState.currentData = response.data;
 
-            const cityName = response.data.city_name || (appState.cities.find(c => c.id == cityId)?.city_name || '');
+            const cityName = response.data.city_name || (appState.cities.find(c => c.id == cityId)?.name || '');
             displayData(response.data, cityName);
         }
 
@@ -466,7 +466,12 @@ async function handleExport(format) {
 /**
  * 显示数据
  */
-function displayData(data) {
+function displayData(data, cityName = '') {
+    // 如果没有传入 cityName，尝试从 data 对象中获取 (Item 30)
+    if (!cityName && data && data.city_name) {
+        cityName = data.city_name;
+    }
+
     // 处理过滤后的数据
     const filteredRecords = applyLocalFilters(data.records);
 
@@ -474,7 +479,7 @@ function displayData(data) {
     displayStatsCards(data.summary);
 
     // 显示图表
-    displayCharts(filteredRecords);
+    displayCharts(filteredRecords, cityName);
 
     // 显示数据表格
     displayDataTable(filteredRecords);
@@ -597,10 +602,35 @@ function displayCharts(records, cityName = '') {
     const step = Math.ceil(records.length / maxPoints);
     const sampledData = records.filter((_, index) => index % step === 0);
 
+    // 更新静态标题 (Item 30)
+    updateChartTitles(cityName);
+
     chartManager.createTemperatureChart('temperatureChart', sampledData, cityName);
     chartManager.createRadiationChart('radiationChart', sampledData, cityName);
     chartManager.createWindSpeedChart('windSpeedChart', sampledData, cityName);
     chartManager.createPrecipitationChart('precipitationChart', sampledData, cityName);
+}
+
+/**
+ * 更新图表区的静态标题
+ */
+function updateChartTitles(cityName) {
+    const titles = {
+        'temperatureChart': '温度趋势',
+        'radiationChart': '辐照度分布',
+        'windSpeedChart': '风速变化',
+        'precipitationChart': '降水量'
+    };
+
+    Object.entries(titles).forEach(([id, baseTitle]) => {
+        const chartCard = document.getElementById(id)?.closest('.chart-card');
+        if (chartCard) {
+            const titleElem = chartCard.querySelector('.chart-title');
+            if (titleElem) {
+                titleElem.textContent = cityName ? `${baseTitle} - ${cityName}` : baseTitle;
+            }
+        }
+    });
 }
 
 /**
@@ -787,6 +817,9 @@ function displayComparisonCharts(details) {
         name: city.city_name,
         data: city.hourly_data
     }));
+
+    // 更新静态标题 (Item 30)
+    updateChartTitles('多城市对比');
 
     // 创建对比图表
     chartManager.createComparisonChart('temperatureChart', citiesData, 'temperature_2m', '温度对比');

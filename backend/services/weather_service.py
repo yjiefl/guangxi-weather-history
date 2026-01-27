@@ -16,6 +16,12 @@ from backend.config import AVAILABLE_FIELDS
 logger = logging.getLogger(__name__)
 
 
+class WeatherService:
+    """
+    天气服务类
+    负责从Open-Meteo API获取历史天气数据
+    """
+    
     def search_city(self, query: str) -> List[Dict[str, Any]]:
         """
         搜索城市
