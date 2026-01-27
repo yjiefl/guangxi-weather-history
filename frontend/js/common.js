@@ -52,13 +52,14 @@ const CommonUtils = {
      * 获取所有可用字段的键值
      */
     getAllFieldKeys() {
+        if (typeof appState === 'undefined' || !appState.fields) return [];
         const keys = [];
-        for (const category of Object.values(AVAILABLE_FIELDS)) {
+        for (const category of Object.values(appState.fields)) {
             keys.push(...Object.keys(category));
         }
         return keys;
     }
-};
+}
 
 // 导出到全局
 window.CommonUtils = CommonUtils;

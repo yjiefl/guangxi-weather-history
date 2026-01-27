@@ -431,7 +431,7 @@ def export_bulk_data():
             filters = {
                 'city_id': city_id,
                 'start_date': start_date,
-                'end_date': end_date + ' 23:59:59'
+                'end_date': end_date + 'T23:59:59'
             }
             records = weather_service.db_manager.get_weather_data(filters)
             
