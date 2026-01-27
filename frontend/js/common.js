@@ -12,7 +12,7 @@ const CommonUtils = {
 
         container.innerHTML = '';
         if (appState.cities.length === 0) {
-            container.innerHTML = '<p style="color: rgba(255,255,255,0.5); width: 100%; text-align: center;">列表为空，请先在城市管理中添加</p>';
+            container.innerHTML = '<p style="color: var(--text-muted); width: 100%; text-align: center;">列表为空，请先在城市管理中添加</p>';
             return;
         }
 

@@ -98,6 +98,19 @@ class APIClient {
      * 删除数据
      * @param {object} params - 删除参数 {city_id, start_date, end_date}
      */
+
+    /**
+     * 预览删除数据
+     * @param {object} params - 删除参数 {city_id, start_date, end_date}
+     */
+    async previewDeleteData(params) {
+        return this.post('/data/delete/preview', params);
+    }
+
+    /**
+     * 删除数据
+     * @param {object} params - 删除参数 {city_id, start_date, end_date}
+     */
     async deleteData(params) {
         return this.request('/data/delete', {
             method: 'DELETE',
@@ -285,6 +298,30 @@ class APIClient {
      */
     async clearCities() {
         return this.request('/cities/clear', { method: 'DELETE' });
+    }
+
+    /**
+     * 批量下载数据
+     * @param {object} params - {city_id, start_date, end_date, fields}
+     */
+    async batchDownload(params) {
+        return this.post('/data/batch-download', params);
+    }
+
+    /**
+     * 检查数据完整性
+     * @param {object} params - {city_id, start_date, end_date}
+     */
+    async checkCompleteness(params) {
+        return this.post('/data/check-completeness', params);
+    }
+
+    /**
+     * 批量导出数据
+     * @param {object} params - {city_ids, start_date, end_date, format}
+     */
+    async exportBulkData(params) {
+        return this.bulkExport(params, params.format || 'excel');
     }
 }
 

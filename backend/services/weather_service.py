@@ -113,6 +113,36 @@ class WeatherService:
         # 如果提供了city_id，为了保证数据库的完整性，我们总是获取所有可用字段 (Item 2)
         request_fields = fields
         if city_id:
+            # 策略：本地数据库优先
+            try:
+                # 1. 尝试从本地持久化表 weather_data 获取数据
+                db_data = self.db_manager.get_weather_data({
+                    'city_id': city_id,
+                    'start_date': f"{start_date}T00:00",
+                    'end_date': f"{end_date}T23:59"
+                })
+                
+                # 2. 检查本地数据是否完整
+                # 计算期望的小时数
+                d1 = datetime.strptime(start_date, '%Y-%m-%d')
+                d2 = datetime.strptime(end_date, '%Y-%m-%d')
+                expected_hours = (d2 - d1).days * 24 + 24
+                
+                if len(db_data) >= expected_hours:
+                    logger.info(f"本地数据库命中: 找到 {len(db_data)} 条记录，满足期望的 {expected_hours} 小时")
+                    # 格式化输出，保持与 API 响应一致
+                    return {
+                        'latitude': latitude,
+                        'longitude': longitude,
+                        'timezone': timezone,
+                        'hourly_data': db_data
+                    }
+                else:
+                    logger.info(f"本地数据库不完整: 仅有 {len(db_data)}/{expected_hours} 小时，将回退到 API/缓存")
+            except Exception as e:
+                logger.warning(f"本地数据库预查失败: {e}")
+
+            # 如果本地不完整，准备向 API 请求所有字段以填补本地库
             all_fields = []
             for cat in AVAILABLE_FIELDS.values():
                 all_fields.extend(cat.keys())
@@ -129,10 +159,10 @@ class WeatherService:
         }
         cache_key = self.cache.generate_cache_key(cache_params)
         
-        # 检查缓存
+        # 检查缓存 (快照缓存)
         cached_data = self.cache.get(cache_key)
         if cached_data:
-            logger.info(f"从缓存获取数据: {start_date} 至 {end_date}")
+            logger.info(f"从快照缓存获取数据: {start_date} 至 {end_date}")
             # 如果请求的字段被缓存，则提取原本请求的部分返回
             if request_fields != fields:
                 filtered_hourly = []

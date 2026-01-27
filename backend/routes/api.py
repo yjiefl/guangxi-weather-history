@@ -775,6 +775,40 @@ def auto_update():
         }), 500
 
 
+@api_bp.route('/data/delete/preview', methods=['POST'])
+def preview_delete_data():
+    """
+    预览删除数据的影响范围
+    """
+    try:
+        data = request.get_json()
+        city_id = data.get('city_id')
+        start_date = data.get('start_date')
+        end_date = data.get('end_date')
+        
+        if not city_id:
+             return jsonify({
+                'code': 400,
+                'message': '缺少必要参数：city_id',
+                'data': None
+            }), 400
+            
+        result = data_manager.preview_delete_data(city_id, start_date, end_date)
+        
+        return jsonify({
+            'code': 200,
+            'message': '预览成功',
+            'data': result
+        })
+    except Exception as e:
+        logger.error(f"预览删除数据失败: {e}")
+        return jsonify({
+            'code': 500,
+            'message': f"预览失败: {str(e)}",
+            'data': None
+        }), 500
+
+
 @api_bp.route('/data/delete', methods=['DELETE'])
 def delete_data():
     """

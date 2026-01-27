@@ -198,9 +198,17 @@ class DataManager:
                 expected_dates.add(current.strftime('%Y-%m-%d'))
                 current += timedelta(days=1)
             
+            # 计算总期望小时数
+            total_hours = len(expected_dates) * 24
+            
             # 找出缺失的日期
             missing_dates = sorted(expected_dates - existing_dates)
             existing_dates_list = sorted(existing_dates)
+            
+            # 计算缺失的小时数 (估算)
+            # 实际缺失的小时数 = 总期望小时数 - 数据库中实际的小时记录数
+            actual_records_count = len(existing_data)
+            missing_count = max(0, total_hours - actual_records_count)
             
             # 按连续性分组缺失日期
             missing_ranges = self._group_consecutive_dates(missing_dates)
@@ -210,16 +218,18 @@ class DataManager:
                 'start_date': start_date,
                 'end_date': end_date,
                 'total_days': len(expected_dates),
+                'total_hours': total_hours,
                 'existing_days': len(existing_dates),
                 'missing_days': len(missing_dates),
-                'completeness_rate': round(len(existing_dates) / len(expected_dates) * 100, 2) if expected_dates else 0,
+                'missing_count': missing_count,
+                'completeness_rate': round(actual_records_count / total_hours * 100, 2) if total_hours > 0 else 0,
                 'existing_dates': existing_dates_list,
                 'missing_dates': missing_dates,
                 'missing_ranges': missing_ranges,
-                'total_records': len(existing_data)
+                'total_records': actual_records_count
             }
             
-            logger.info(f"完整性检查完成: {result['completeness_rate']}% 完整")
+            logger.info(f"完整性检查完成: {result['completeness_rate']}% 完整 (缺失 {missing_count} 小时)")
             return result
             
         except Exception as e:
@@ -368,4 +378,35 @@ class DataManager:
             }
         except Exception as e:
             logger.error(f"删除数据失败: {e}")
+            raise
+
+    def preview_delete_data(self, city_id: int, start_date: str = None, end_date: str = None) -> Dict[str, Any]:
+        """
+        预览删除数据的范围和大小
+        """
+        try:
+            filters = {'city_id': city_id}
+            if start_date:
+                filters['start_date'] = start_date
+            if end_date:
+                filters['end_date'] = end_date
+                
+            stats = self.db_manager.get_weather_data_stats(filters)
+            city_info = self.city_manager.get_city_by_id(city_id)
+            
+            # 估算大小时，假设每条记录约占用 300 字节 (text + reals)
+            estimated_size_bytes = stats['count'] * 300
+            estimated_size_mb = round(estimated_size_bytes / (1024 * 1024), 2)
+            
+            return {
+                'success': True,
+                'city_name': city_info['city_name'] if city_info else f"ID {city_id}",
+                'count': stats['count'],
+                'start_date': stats['start_date'],
+                'end_date': stats['end_date'],
+                'estimated_size_mb': estimated_size_mb,
+                'message': f"将删除 {stats['count']} 条记录"
+            }
+        except Exception as e:
+            logger.error(f"预览删除数据失败: {e}")
             raise

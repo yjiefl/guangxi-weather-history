@@ -326,3 +326,45 @@ class DatabaseManager:
         sql = f"DELETE FROM weather_data WHERE {where_clause}"
         
         return self.execute_update(sql, tuple(params))
+
+    def get_weather_data_stats(self, filters: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        根据过滤条件获取数据统计（行数、时间范围等）
+        
+        Args:
+            filters: 过滤条件
+            
+        Returns:
+            统计信息字典
+        """
+        conditions = []
+        params = []
+        
+        if 'city_id' in filters:
+            conditions.append("city_id = ?")
+            params.append(filters['city_id'])
+            
+        if 'start_date' in filters:
+            conditions.append("datetime >= ?")
+            params.append(filters['start_date'])
+            
+        if 'end_date' in filters:
+            conditions.append("datetime <= ?")
+            params.append(filters['end_date'])
+            
+        where_clause = " AND ".join(conditions) if conditions else "1=1"
+        
+        # 查询总行数和日期范围
+        sql = f'''
+            SELECT 
+                COUNT(*) as count,
+                MIN(datetime) as start_date,
+                MAX(datetime) as end_date
+            FROM weather_data 
+            WHERE {where_clause}
+        '''
+        
+        result = self.execute_query(sql, tuple(params))
+        if result:
+            return dict(result[0])
+        return {'count': 0, 'start_date': None, 'end_date': None}

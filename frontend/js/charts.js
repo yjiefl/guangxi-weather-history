@@ -12,25 +12,44 @@ class ChartManager {
         this.defaultOptions = {
             responsive: true,
             maintainAspectRatio: true,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
             plugins: {
                 legend: {
                     labels: {
-                        color: '#cbd5e1',
+                        color: '#1e293b',
                         font: {
                             family: 'Inter',
-                            size: 12
-                        }
+                            size: 13,
+                            weight: '600'
+                        },
+                        padding: 15
                     }
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                    titleColor: '#f1f5f9',
-                    bodyColor: '#cbd5e1',
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)', // 亮色背景更高级
+                    titleColor: '#1e293b',
+                    bodyColor: '#334155',
+                    borderColor: '#e2e8f0',
                     borderWidth: 1,
-                    padding: 12,
+                    padding: 14,
+                    cornerRadius: 8,
                     displayColors: true,
+                    usePointStyle: true,
+                    boxPadding: 6,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
                     callbacks: {
+                        title: function (context) {
+                            return context[0].label; // 显示完整的日期时间
+                        },
                         label: function (context) {
                             let label = context.dataset.label || '';
                             if (label) {
@@ -39,7 +58,7 @@ class ChartManager {
                             if (context.parsed.y !== null) {
                                 label += context.parsed.y.toFixed(2);
                             }
-                            return label;
+                            return ' ' + label; // 增加间距
                         }
                     }
                 }
@@ -47,26 +66,26 @@ class ChartManager {
             scales: {
                 x: {
                     ticks: {
-                        color: '#94a3b8',
+                        color: '#64748b', // 更深的灰色
                         font: {
                             family: 'Inter',
                             size: 11
                         }
                     },
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.05)'
+                        color: 'rgba(0, 0, 0, 0.05)' // 浅色背景对应的深色网格
                     }
                 },
                 y: {
                     ticks: {
-                        color: '#94a3b8',
+                        color: '#64748b',
                         font: {
                             family: 'Inter',
                             size: 11
                         }
                     },
                     grid: {
-                        color: 'rgba(255, 255, 255, 0.05)'
+                        color: 'rgba(0, 0, 0, 0.05)'
                     }
                 }
             }
@@ -132,8 +151,8 @@ class ChartManager {
                     title: {
                         display: !!cityName,
                         text: `温度趋势 - ${cityName}`,
-                        color: '#f1f5f9',
-                        font: { size: 14, weight: 'bold' }
+                        color: '#1d1d1f', // 纯黑/深灰
+                        font: { size: 15, weight: '700' } // 调大加粗
                     }
                 }
             }
@@ -211,8 +230,8 @@ class ChartManager {
                     title: {
                         display: !!cityName,
                         text: `辐照度分布 - ${cityName}`,
-                        color: '#f1f5f9',
-                        font: { size: 14, weight: 'bold' }
+                        color: '#1d1d1f',
+                        font: { size: 15, weight: '700' }
                     }
                 }
             }
@@ -278,8 +297,8 @@ class ChartManager {
                     title: {
                         display: !!cityName,
                         text: `风速变化 - ${cityName}`,
-                        color: '#f1f5f9',
-                        font: { size: 14, weight: 'bold' }
+                        color: '#1d1d1f',
+                        font: { size: 15, weight: '700' }
                     }
                 }
             }
@@ -327,8 +346,8 @@ class ChartManager {
                     title: {
                         display: !!cityName,
                         text: `降水量 - ${cityName}`,
-                        color: '#f1f5f9',
-                        font: { size: 14, weight: 'bold' }
+                        color: '#1d1d1f',
+                        font: { size: 15, weight: '700' }
                     }
                 }
             }
@@ -394,8 +413,8 @@ class ChartManager {
                     title: {
                         display: true,
                         text: `多城市对比: ${label}`,
-                        color: '#f1f5f9',
-                        font: { size: 14, weight: 'bold' }
+                        color: '#1d1d1f',
+                        font: { size: 16, weight: '700' }
                     }
                 }
             }

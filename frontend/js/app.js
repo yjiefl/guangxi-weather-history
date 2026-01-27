@@ -14,6 +14,10 @@ const appState = {
     filterDate: 'all'
 };
 
+// Export appState to global scope
+window.appState = appState;
+window.loadCities = loadCities; // Ensure loadCities is also global
+
 // WMO 天气代码映射
 const weatherCodeMap = {
     0: { name: '晴朗', icon: '☀️' },
@@ -174,6 +178,14 @@ function bindEvents() {
         });
     });
 
+    // 导航栏主标签切换
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const tabName = this.dataset.mainTab;
+            handleMainTabSwitch(tabName);
+        });
+    });
+
     // 导航栏点击效果
     document.querySelectorAll('.nav-link').forEach(link => {
         link.addEventListener('click', function () {
@@ -192,8 +204,10 @@ function bindEvents() {
             if (!shutdownArmed) {
                 // 第一步：激活确认状态
                 shutdownArmed = true;
-                shutdownBtn.style.transform = 'scale(1.2) rotate(10deg)';
-                shutdownBtn.style.background = 'linear-gradient(135deg, #ff0000, #ff4d4d)';
+                shutdownBtn.style.transform = 'scale(1.1)';
+                shutdownBtn.style.color = '#ff2d55'; // 更亮的红色提示
+                shutdownBtn.style.fontWeight = '700';
+                shutdownBtn.textContent = '确认退出?';
                 shutdownBtn.title = '再次点击确定关闭';
 
                 // 提示文字
@@ -205,7 +219,8 @@ function bindEvents() {
                 armedTimer = setTimeout(() => {
                     shutdownArmed = false;
                     shutdownBtn.style.transform = '';
-                    shutdownBtn.style.background = '';
+                    shutdownBtn.style.color = '';
+                    shutdownBtn.textContent = '退出';
                     shutdownBtn.title = '停止并关闭后台服务';
                     document.querySelector('.status-text').textContent = originalText;
                     document.querySelector('.status-text').style.color = '';
@@ -213,6 +228,7 @@ function bindEvents() {
             } else {
                 // 第二步：执行关闭
                 clearTimeout(armedTimer);
+                shutdownBtn.textContent = '正在退出...';
                 document.querySelector('.status-dot').className = 'status-dot offline';
                 document.querySelector('.status-text').textContent = '正在关机...';
 
@@ -240,6 +256,31 @@ function bindEvents() {
         document.getElementById('dateFilter').value = 'all';
         handleFilterChange();
     });
+}
+
+/**
+ * 处理主标签切换
+ */
+function handleMainTabSwitch(tabName) {
+    // 更新导航按钮状态
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+        if (btn.dataset.mainTab === tabName) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+
+    // 更新各面板显示
+    document.querySelectorAll('.main-tab-content').forEach(content => {
+        if (content.id === `main-tab-${tabName}`) {
+            content.classList.add('active');
+        } else {
+            content.classList.remove('active');
+        }
+    });
+
+    console.log(`切换到主标签: ${tabName}`);
 }
 
 /**
@@ -739,9 +780,9 @@ function displayComparisonStats(comparison) {
     // 计算城市数量
     const cityCount = Object.keys(comparison).length;
 
-    // 添加对比说明
+    // 添加核心分析说明卡片
     const headerCard = document.createElement('div');
-    headerCard.className = 'stat-card';
+    headerCard.className = 'stat-card comparison-header-card';
     headerCard.style.gridColumn = '1 / -1';
     headerCard.innerHTML = `
         <div class="stat-card-header">
@@ -751,11 +792,18 @@ function displayComparisonStats(comparison) {
     `;
     statsCards.appendChild(headerCard);
 
-    // 显示各城市的平均温度对比
+    // 为每个城市创建一个独立的行（容器）
     Object.entries(comparison).forEach(([cityName, summary]) => {
+        // 创建城市标题分隔符
+        const cityTitle = document.createElement('div');
+        cityTitle.className = 'city-stats-divider';
+        cityTitle.style.gridColumn = '1 / -1';
+        cityTitle.innerHTML = `<span>${cityName}</span>`;
+        statsCards.appendChild(cityTitle);
+
         if (summary.temperature) {
             statsCards.appendChild(createStatCard(
-                `${cityName} - 平均温度`,
+                '平均温度',
                 summary.temperature.avg,
                 '°C',
                 `最高: ${summary.temperature.max}°C, 最低: ${summary.temperature.min}°C`,
@@ -763,12 +811,41 @@ function displayComparisonStats(comparison) {
             ));
         }
 
-        // 每个城市的天气概况
+        if (summary.solar_radiation) {
+            statsCards.appendChild(createStatCard(
+                '太阳辐射',
+                summary.solar_radiation.avg,
+                'W/m²',
+                `总计: ${summary.solar_radiation.total_mj.toFixed(2)} MJ/m²`,
+                'radiation'
+            ));
+        }
+
+        if (summary.wind_speed) {
+            statsCards.appendChild(createStatCard(
+                '风速',
+                (summary.wind_speed.avg / 3.6).toFixed(2),
+                'm/s',
+                `最大: ${(summary.wind_speed.max / 3.6).toFixed(2)} m/s`,
+                'wind'
+            ));
+        }
+
+        if (summary.precipitation) {
+            statsCards.appendChild(createStatCard(
+                '降水量',
+                summary.precipitation.total,
+                'mm',
+                `降雨时间: ${summary.precipitation.rainy_hours}小时`,
+                'precipitation'
+            ));
+        }
+
         if (summary.weather) {
             const code = summary.weather.most_frequent;
             const weatherInfo = weatherCodeMap[code] || { name: `代码 ${code}`, icon: '❓' };
             statsCards.appendChild(createStatCard(
-                `${cityName} - 主要天气`,
+                '主要天气',
                 weatherInfo.name,
                 '',
                 `总体天气状态`,

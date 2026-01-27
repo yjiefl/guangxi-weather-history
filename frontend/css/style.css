@@ -17,13 +17,15 @@
 
     /* 苹果风格背景 (Light Mode) */
     --bg-primary: #f5f5f7;
-    /* Apple Website Gray */
+    /* Apple System Gray 6 */
     --bg-secondary: #ffffff;
-    --bg-card: rgba(255, 255, 255, 0.7);
-    --bg-card-hover: rgba(255, 255, 255, 0.9);
-    --bg-surface: rgba(255, 255, 255, 0.85);
+    --bg-card: #ffffff;
+    /* Solid White for better contrast */
+    --bg-card-hover: #ffffff;
+    /* Keep white on hover, maybe shadow change */
+    --bg-surface: rgba(255, 255, 255, 0.8);
     /* Glassmorphism background */
-    --bg-input: rgba(0, 0, 0, 0.05);
+    --bg-input: #ffffff;
 
     /* 文字颜色 */
     --text-primary: #1d1d1f;
@@ -45,6 +47,13 @@
 
     /* 苹果系统字体 */
     --font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+
+    /* 间距体系 */
+    --spacing-xs: 8px;
+    --spacing-sm: 12px;
+    --spacing-md: 20px;
+    --spacing-lg: 32px;
+    --spacing-xl: 48px;
 }
 
 /* 全局样式 */
@@ -71,17 +80,18 @@ body {
 }
 
 .container {
-    max-width: 1280px;
+    max-width: 1320px;
     margin: 0 auto;
-    padding: 0 var(--spacing-md);
+    padding: 0 var(--spacing-lg);
 }
 
 /* 顶部导航栏 (Apple Style) */
 .header {
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(255, 255, 255, 0.8);
+    /* Light translucent white */
     backdrop-filter: saturate(180%) blur(var(--glass-blur));
     -webkit-backdrop-filter: saturate(180%) blur(var(--glass-blur));
-    border-bottom: 0.5px solid var(--border-color);
+    border-bottom: 0.5px solid rgba(0, 0, 0, 0.05);
     padding: 12px 0;
     position: sticky;
     top: 0;
@@ -108,11 +118,13 @@ body {
 
 .logo h1 {
     font-size: 1.5rem;
-    font-weight: 600;
-    background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+    font-weight: 700;
+    /* 高级感蓝色渐变：从深天蓝到典雅靛蓝 */
+    background: linear-gradient(135deg, #007aff 0%, #0033bb 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    letter-spacing: -0.02em;
 }
 
 .header-right {
@@ -131,13 +143,56 @@ body {
     text-decoration: none;
     padding: var(--spacing-xs) var(--spacing-md);
     border-radius: var(--border-radius);
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    font-weight: 500;
 }
 
 .nav-link:hover,
-.nav-link.active {
-    color: var(--text-primary);
-    background: var(--bg-card-hover);
+.nav-link.active,
+.nav-btn.active {
+    color: var(--color-primary);
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.nav-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: var(--spacing-xs) var(--spacing-md);
+    border-radius: var(--border-radius);
+    transition: all 0.2s ease;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: var(--font-family);
+}
+
+.nav-btn:hover {
+    color: var(--color-primary);
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* 主标签页切换内容 */
+.main-tab-content {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.main-tab-content.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* 主内容区 */
@@ -190,14 +245,16 @@ body {
 .form-group label {
     font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--text-muted);
+    color: var(--text-secondary);
+    /* 从 text-muted 改为更深的 text-secondary */
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
 .form-control {
-    background: rgba(255, 255, 255, 0.05);
-    border: 0.5px solid var(--border-color);
+    background: #ffffff;
+    border: 1px solid #d2d2d7;
+    /* Apple input border */
     border-radius: var(--border-radius);
     padding: 10px 14px;
     color: var(--text-primary);
@@ -222,8 +279,9 @@ body {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    padding: 12px;
-    background: rgba(0, 0, 0, 0.2);
+    padding: 16px;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
 }
 
@@ -232,21 +290,25 @@ body {
     align-items: center;
     gap: 8px;
     padding: 6px 14px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 0.5px solid transparent;
+    background: #f2f2f7;
+    /* Apple System Gray 6 / Fill */
+    border: 1px solid transparent;
     border-radius: var(--border-radius-pill);
     cursor: pointer;
     transition: all 0.2s ease;
     user-select: none;
 }
 
-.field-checkbox:hover {
-    background: rgba(255, 255, 255, 0.12);
+.field-checkbox:hover:not(:has(input:checked)) {
+    background: #e5e5ea;
 }
 
+/* 选中状态立即变色，并移除背景色渐变效果使反馈更即时 */
 .field-checkbox:has(input:checked) {
-    background: var(--color-primary);
-    border-color: transparent;
+    background: var(--color-primary) !important;
+    border-color: transparent !important;
+    color: white !important;
+    transition: none !important;
 }
 
 .field-checkbox input[type="checkbox"] {
@@ -335,24 +397,45 @@ body {
 }
 
 .btn-secondary {
-    background: rgba(255, 255, 255, 0.12);
-    color: white;
+    background: #e5e5ea;
+    /* Light gray for secondary buttons */
+    color: var(--text-primary);
     backdrop-filter: blur(10px);
 }
 
 .btn-secondary:hover {
-    background: rgba(255, 255, 255, 0.2);
+    background: #d1d1d6;
     transform: scale(1.02);
 }
 
-.btn-danger {
-    background: var(--color-danger);
-    color: white;
+/* 退出按钮专项强制样式 - 确保无圆圈，纯文字 */
+#shutdownBtn {
+    background: transparent !important;
+    color: var(--color-danger) !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    padding: var(--spacing-xs) var(--spacing-sm) !important;
+    font-weight: 600 !important;
+    transition: all 0.2s ease;
 }
 
-.btn-danger:hover {
-    background: #e03127;
-    transform: scale(1.02);
+#shutdownBtn:hover {
+    color: #b91c1c !important;
+    /* 深红色提升可读性 */
+    background: rgba(255, 59, 48, 0.08) !important;
+    /* 极浅反馈背景 */
+    text-decoration: underline !important;
+    transform: scale(1.05) !important;
+}
+
+.btn-danger-soft {
+    background: transparent;
+    color: var(--color-danger);
+    border: none;
+    font-weight: 500;
 }
 
 .btn-tiny {
@@ -401,10 +484,10 @@ body {
 /* 统计卡片 (Apple Style) */
 .stats-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 16px;
-    margin-bottom: 40px;
-    /* 增加与图表的间距 */
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    /* 从 240px 减小到 180px */
+    gap: 12px;
+    margin-bottom: 30px;
 }
 
 .stat-card {
@@ -412,8 +495,10 @@ body {
     backdrop-filter: blur(var(--glass-blur));
     -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 0.5px solid var(--border-color);
-    border-radius: var(--border-radius-lg);
-    padding: 20px;
+    border-radius: var(--border-radius);
+    /* 稍微减小圆角 */
+    padding: 12px;
+    /* 从 16px 减小到 12px */
     transition: transform 0.3s cubic-bezier(0.2, 1, 0.2, 1), background 0.3s ease;
 }
 
@@ -425,15 +510,17 @@ body {
 .stat-card-header {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-bottom: 16px;
+    gap: 8px;
+    margin-bottom: 8px;
+    /* 从 16px 减小 */
 }
 
 .stat-icon {
-    width: 36px;
-    height: 36px;
-    padding: 7px;
-    border-radius: 10px;
+    width: 24px;
+    /* 从 30px 减小到 24px */
+    height: 24px;
+    padding: 5px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -461,31 +548,55 @@ body {
 }
 
 .stat-label {
-    font-size: 0.8125rem;
+    font-size: 0.7rem;
+    /* 从 0.75rem 减小 */
     font-weight: 600;
-    color: var(--text-muted);
-    letter-spacing: 0.2px;
+    color: var(--text-secondary);
+    letter-spacing: 0.1px;
 }
 
 .stat-value {
-    font-size: 2.25rem;
+    font-size: 1.4rem;
+    /* 从 1.75rem 减小 */
     font-weight: 700;
     color: var(--text-primary);
-    margin-bottom: 4px;
-    letter-spacing: -1px;
+    margin-bottom: 2px;
+    letter-spacing: -0.4px;
 }
 
 .stat-unit {
-    font-size: 1rem;
-    color: var(--text-muted);
-    margin-left: var(--spacing-xs);
+    font-size: 0.8rem;
+    /* 从 0.875rem 减小 */
+    color: var(--text-secondary);
+    margin-left: 2px;
 }
 
 .stat-details {
     display: flex;
-    gap: var(--spacing-md);
-    font-size: 0.875rem;
-    color: var(--text-secondary);
+    gap: 8px;
+    font-size: 0.6875rem;
+    /* 约 11px */
+    color: #4b5563;
+    font-weight: 500;
+    margin-top: 2px;
+}
+
+/* 城市统计分组标题 */
+.city-stats-divider {
+    margin: 24px 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: var(--color-primary);
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.city-stats-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(0, 122, 255, 0.2), transparent);
 }
 
 /* 图表区域 (Apple Style Grid) */
@@ -598,14 +709,15 @@ body {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    background: rgba(0, 0, 0, 0.2);
-    padding: 8px;
+    background: #ffffff;
+    padding: 12px;
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     margin-bottom: 12px;
 }
 
 .quick-dates .btn-tiny {
-    background: rgba(255, 255, 255, 0.05);
+    background: #f2f2f7;
     color: var(--text-secondary);
     border-radius: 8px;
     padding: 6px 12px;
@@ -615,7 +727,7 @@ body {
 }
 
 .quick-dates .btn-tiny:hover {
-    background: rgba(255, 255, 255, 0.15);
+    background: #007aff;
     color: white;
 }
 
@@ -625,7 +737,7 @@ body {
     flex-wrap: wrap !important;
     gap: 12px !important;
     padding: 20px !important;
-    background: rgba(255, 255, 255, 0.03) !important;
+    background: #ffffff !important;
     border-radius: var(--border-radius-lg) !important;
     border: 0.5px solid var(--border-color) !important;
     min-height: 60px;
@@ -639,7 +751,7 @@ body {
 
 .city-checkbox:hover {
     transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.12) !important;
+    background: #e5e5ea !important;
 }
 
 /* 全选容器样式 */
@@ -903,11 +1015,12 @@ body {
     display: flex;
     align-items: center;
     gap: var(--spacing-xs);
-    background: rgba(0, 0, 0, 0.2);
+    gap: var(--spacing-xs);
+    background: #f2f2f7;
     padding: 6px 12px;
     border-radius: 20px;
     font-size: 0.8125rem;
-    border: 1px solid var(--border-color);
+    border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
 .status-dot {
@@ -973,24 +1086,6 @@ body {
     transform: translateY(-1px);
 }
 
-#shutdownBtn {
-    width: 38px !important;
-    height: 38px !important;
-    padding: 0 !important;
-    border-radius: 50% !important;
-    display: flex !important;
-    align-items: center;
-    justify-content: center;
-    border: none !important;
-    background: linear-gradient(135deg, var(--color-danger), #b91c1c) !important;
-    box-shadow: 0 0 10px rgba(239, 68, 68, 0.4);
-    cursor: pointer;
-}
-
-#shutdownBtn:hover {
-    transform: scale(1.1) !important;
-    box-shadow: 0 0 15px rgba(239, 68, 68, 0.6);
-}
 
 /* 进度条样式 */
 .progress-box {
@@ -1044,10 +1139,11 @@ body {
 .city-selector-compact {
     max-height: 120px;
     overflow-y: auto;
+    overflow-y: auto;
     border: 1px solid var(--border-color);
     padding: 8px;
     border-radius: var(--border-radius);
-    background: rgba(0, 0, 0, 0.1);
+    background: #ffffff;
 }
 
 /* 筛选栏样式 (Item 14 & 15) */
@@ -1056,7 +1152,8 @@ body {
     flex-wrap: wrap;
     gap: var(--spacing-md);
     padding: var(--spacing-sm) var(--spacing-md);
-    background: rgba(255, 255, 255, 0.03);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: #ffffff;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     margin-bottom: var(--spacing-lg);
@@ -1079,9 +1176,9 @@ body {
 
 .form-control-sm {
     padding: 4px 8px;
-    background: rgba(0, 0, 0, 0.2);
+    background: #ffffff;
     border: 1px solid var(--border-color);
-    border-radius: 4px;
+    border-radius: 6px;
     color: var(--text-primary);
     font-size: 0.8125rem;
     outline: none;
@@ -1117,9 +1214,9 @@ body {
 }
 
 .search-results-list {
-    background: rgba(255, 255, 255, 0.05);
+    background: #ffffff;
     backdrop-filter: blur(10px);
-    border: 0.5px solid var(--border-color);
+    border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
     max-height: 250px;
     overflow-y: auto;
@@ -1137,7 +1234,7 @@ body {
 }
 
 .search-result-item:hover {
-    background: rgba(255, 255, 255, 0.1);
+    background: #f2f2f7;
 }
 
 .result-name {
@@ -1162,15 +1259,18 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(255, 255, 255, 0.04);
-    border: 0.5px solid var(--border-color);
+    justify-content: space-between;
+    align-items: center;
+    background: #f9f9fa;
+    /* Very light gray */
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 10px 14px;
     transition: all 0.2s ease;
 }
 
 .managed-city-item:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: #f2f2f7;
     transform: translateY(-1px);
 }
 
