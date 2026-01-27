@@ -41,11 +41,19 @@ function initDataManagement() {
         showResultMessage('downloadResult', '由于用户请求，下载即将中止...', 'error');
     });
 
-    // 填充城市下拉框
+    // 填充完成、加载统计
     populateManagementCities();
-
-    // 加载初始统计数据
     loadDataStatistics();
+
+    // 设置默认日期 (Item 18/19: 默认昨天)
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const dateStr = yesterday.toISOString().split('T')[0];
+
+    ['downloadStartDate', 'downloadEndDate', 'checkStartDate', 'checkEndDate'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = dateStr;
+    });
 }
 
 /**
@@ -64,18 +72,9 @@ function switchTab(tabName) {
 }
 
 function populateManagementCities() {
-    const checkCity = document.getElementById('checkCity');
-
     // 使用 CommonUtils 渲染多选列表
     CommonUtils.renderCityCheckboxes('downloadCitySelect', 'dl-city-checkbox', 'dlCity');
-
-    if (appState.cities.length > 0 && checkCity) {
-        // 填充检查城市（单选）
-        const options = appState.cities.map(city =>
-            `<option value="${city.id}">${city.name} (${city.region})</option>`
-        ).join('');
-        checkCity.innerHTML = '<option value="">请选择城市</option>' + options;
-    }
+    CommonUtils.renderCityCheckboxes('checkCitySelect', 'check-city-checkbox', 'checkCity');
 }
 
 async function handleBatchDownload() {
@@ -269,12 +268,13 @@ async function handleDownloadAllCities() {
  * 处理完整性检查
  */
 async function handleCheckCompleteness() {
-    const cityId = parseInt(document.getElementById('checkCity').value);
+    const cityIds = CommonUtils.getSelectedCityIds('check-city-checkbox');
     const startDate = document.getElementById('checkStartDate').value;
     const endDate = document.getElementById('checkEndDate').value;
 
-    if (!cityId || !startDate || !endDate) {
-        showResultMessage('checkResult', '请填写所有字段', 'error');
+    const validation = CommonUtils.validateDateRange(startDate, endDate);
+    if (cityIds.length === 0 || !validation.valid) {
+        showResultMessage('checkResult', cityIds.length === 0 ? '请选择至少一个城市' : validation.message, 'error');
         return;
     }
 
@@ -282,18 +282,26 @@ async function handleCheckCompleteness() {
     btn.disabled = true;
     btn.textContent = '检查中...';
 
-    try {
-        const response = await api.post('/data/check-completeness', {
-            city_id: cityId,
-            start_date: startDate,
-            end_date: endDate
-        });
+    const resultContainer = document.getElementById('checkResult');
+    resultContainer.innerHTML = '<p style="text-align: center;">正在检查，请稍候...</p>';
+    resultContainer.style.display = 'block';
 
-        if (response.code === 200) {
-            displayCompletenessResult(response.data);
-        } else {
-            showResultMessage('checkResult', response.message, 'error');
+    try {
+        let allResultsHtml = '';
+        for (const cityId of cityIds) {
+            const response = await api.post('/data/check-completeness', {
+                city_id: cityId,
+                start_date: startDate,
+                end_date: endDate
+            });
+
+            if (response.code === 200) {
+                allResultsHtml += generateCompletenessHtml(response.data);
+            } else {
+                allResultsHtml += `<div class="result-message error">城市ID ${cityId}: ${response.message}</div>`;
+            }
         }
+        resultContainer.innerHTML = allResultsHtml;
     } catch (error) {
         showResultMessage('checkResult', '检查失败: ' + error.message, 'error');
     } finally {
@@ -308,18 +316,15 @@ async function handleCheckCompleteness() {
 }
 
 /**
- * 显示完整性检查结果
+ * 生成完整性检查结果HTML
  */
-function displayCompletenessResult(data) {
-    const container = document.getElementById('checkResult');
-    container.style.display = 'block';
-
+function generateCompletenessHtml(data) {
     const rateColor = data.completeness_rate >= 90 ? 'var(--color-success)' :
         data.completeness_rate >= 70 ? 'var(--color-warning)' :
             'var(--color-danger)';
 
     let html = `
-        <div class="completeness-card">
+        <div class="completeness-card" style="margin-bottom: 20px;">
             <div class="completeness-header">
                 <h3>${data.city_name} - 数据完整性报告</h3>
                 <div class="completeness-rate" style="color: ${rateColor}">
@@ -365,7 +370,7 @@ function displayCompletenessResult(data) {
     }
 
     html += `</div>`;
-    container.innerHTML = html;
+    return html;
 }
 
 /**
@@ -450,29 +455,12 @@ async function handleExportBulk() {
     btn.textContent = '正在导出...';
 
     try {
-        const response = await fetch(`${api.baseUrl}/data/export-bulk`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                city_ids: cityIds,
-                start_date: startDate,
-                end_date: endDate,
-                format: 'excel'
-            })
-        });
+        await api.bulkExport({
+            city_ids: cityIds,
+            start_date: startDate,
+            end_date: endDate
+        }, 'excel');
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || '导出失败');
-        }
-
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `批量天气数据_${startDate}_${endDate}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
         appendResultToDownload('✓ 导出成功，请在浏览器下载管理中查看', 'success');
     } catch (error) {
         showResultMessage('downloadResult', '导出失败: ' + error.message, 'error');

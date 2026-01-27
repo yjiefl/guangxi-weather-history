@@ -9,6 +9,9 @@ const API_BASE_URL = window.location.origin + '/api';
  * API客户端类
  */
 class APIClient {
+    constructor() {
+        this.baseUrl = API_BASE_URL;
+    }
     /**
      * 发送HTTP请求
      * @param {string} endpoint - API端点
@@ -136,6 +139,56 @@ class APIClient {
             return true;
         } catch (error) {
             console.error('导出错误:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * 批量导出天气数据
+     * @param {object} params - 导出参数
+     * @param {string} format - 导出格式 (excel/csv)
+     */
+    async bulkExport(params, format = 'excel') {
+        const url = `${this.baseUrl}/data/export-bulk`;
+
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ ...params, format }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.message || '导出失败');
+            }
+
+            // 获取文件名
+            const contentDisposition = response.headers.get('Content-Disposition');
+            let filename = `批量天气数据.${format === 'csv' ? 'csv' : 'xlsx'}`;
+
+            if (contentDisposition) {
+                const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(contentDisposition);
+                if (matches != null && matches[1]) {
+                    filename = matches[1].replace(/['"]/g, '');
+                }
+            }
+
+            const blob = await response.blob();
+            const downloadUrl = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = downloadUrl;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(downloadUrl);
+
+            return true;
+        } catch (error) {
+            console.error('批量导出错误:', error);
             throw error;
         }
     }
