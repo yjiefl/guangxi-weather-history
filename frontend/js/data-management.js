@@ -35,6 +35,17 @@ function initDataManagement() {
         if (btn) btn.addEventListener('click', handler);
     });
 
+    // 城市管理相关绑定
+    const citySearchBtn = document.getElementById('citySearchBtn');
+    if (citySearchBtn) citySearchBtn.addEventListener('click', handleCitySearch);
+
+    const citySearchInput = document.getElementById('citySearchInput');
+    if (citySearchInput) {
+        citySearchInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleCitySearch();
+        });
+    }
+
     // 取消下载按钮
     document.getElementById('cancelDownloadBtn').addEventListener('click', () => {
         downloadState.cancelRequested = true;
@@ -44,6 +55,7 @@ function initDataManagement() {
     // 填充完成、加载统计
     populateManagementCities();
     loadDataStatistics();
+    loadManagedCities();
 
     // 设置默认日期 (Item 18/19: 默认昨天)
     const yesterday = new Date();
@@ -472,6 +484,137 @@ async function handleExportBulk() {
 function appendResultToDownload(message, type) {
     showResultMessage('downloadResult', message, type);
 }
+
+/**
+ * 搜索城市
+ */
+async function handleCitySearch() {
+    const input = document.getElementById('citySearchInput');
+    const query = input.value.trim();
+    if (!query) return;
+
+    const btn = document.getElementById('citySearchBtn');
+    const resultsContainer = document.getElementById('citySearchResults');
+
+    btn.disabled = true;
+    btn.textContent = '搜索中...';
+    resultsContainer.style.display = 'block';
+    resultsContainer.innerHTML = '<p style="text-align: center; padding: 10px;">正在搜索...</p>';
+
+    try {
+        const response = await api.searchCities(query);
+        if (response.code === 200 && response.data.length > 0) {
+            renderSearchResults(response.data);
+        } else {
+            resultsContainer.innerHTML = '<p style="text-align: center; padding: 10px;">未找到匹配的城市</p>';
+        }
+    } catch (error) {
+        resultsContainer.innerHTML = `<p style="text-align: center; padding: 10px; color: var(--color-danger);">搜索出错: ${error.message}</p>`;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '搜索';
+    }
+}
+
+/**
+ * 渲染搜索结果
+ */
+function renderSearchResults(results) {
+    const container = document.getElementById('citySearchResults');
+    container.innerHTML = results.map(city => `
+        <div class="search-result-item">
+            <div class="result-info">
+                <div class="result-name">${city.name}</div>
+                <div class="result-region">${city.region}</div>
+                <div class="result-coords">${city.longitude.toFixed(2)}, ${city.latitude.toFixed(2)}</div>
+            </div>
+            <button class="btn btn-tiny btn-primary" onclick="handleAddCity('${city.name}', ${city.longitude}, ${city.latitude}, '${city.region}')">添加</button>
+        </div>
+    `).join('');
+}
+
+/**
+ * 添加城市
+ */
+async function handleAddCity(name, lng, lat, region) {
+    try {
+        const response = await api.addCity({ name, longitude: lng, latitude: lat, region });
+        if (response.code === 200) {
+            // 刷新列表
+            await loadManagedCities();
+            // 刷新主应用的城市列表
+            if (typeof loadCities === 'function') await loadCities();
+            // 重新填充管理面板的复选框
+            populateManagementCities();
+
+            // 清空搜索框
+            document.getElementById('citySearchInput').value = '';
+            document.getElementById('citySearchResults').style.display = 'none';
+        }
+    } catch (error) {
+        alert('添加失败: ' + error.message);
+    }
+}
+
+/**
+ * 加载已管理城市
+ */
+async function loadManagedCities() {
+    const container = document.getElementById('managedCityList');
+    if (!container) return;
+
+    try {
+        const response = await api.getCities();
+        if (response.code === 200) {
+            renderManagedCities(response.data);
+        }
+    } catch (error) {
+        console.error('加载城市列表失败:', error);
+    }
+}
+
+/**
+ * 渲染已管理城市
+ */
+function renderManagedCities(cities) {
+    const container = document.getElementById('managedCityList');
+    if (cities.length === 0) {
+        container.innerHTML = '<p style="color: rgba(255,255,255,0.5); text-align: center; padding: 20px;">列表为空，请搜索并添加城市</p>';
+        return;
+    }
+
+    container.innerHTML = cities.map(city => `
+        <div class="managed-city-item">
+            <div class="city-info">
+                <div class="city-name">${city.name}</div>
+                <div class="city-region">${city.region}</div>
+            </div>
+            <button class="btn btn-tiny btn-danger" onclick="handleRemoveCity(${city.id})">移除</button>
+        </div>
+    `).join('');
+}
+
+/**
+ * 移除城市
+ */
+async function handleRemoveCity(cityId) {
+    if (!confirm('确定要从默认列表中移除该城市吗？')) return;
+
+    try {
+        const response = await api.removeCity(cityId);
+        if (response.code === 200) {
+            await loadManagedCities();
+            if (typeof loadCities === 'function') await loadCities();
+            populateManagementCities();
+        }
+    } catch (error) {
+        alert('移除失败: ' + error.message);
+    }
+}
+
+// 暴露出这些函数供 onclick 使用
+window.handleAddCity = handleAddCity;
+window.handleRemoveCity = handleRemoveCity;
 
 // 在页面加载完成后初始化
 document.addEventListener('DOMContentLoaded', () => {

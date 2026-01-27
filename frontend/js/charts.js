@@ -89,8 +89,9 @@ class ChartManager {
      * 创建温度趋势图
      * @param {string} canvasId - Canvas元素ID
      * @param {array} data - 数据数组
+     * @param {string} cityName - 城市名称
      */
-    createTemperatureChart(canvasId, data) {
+    createTemperatureChart(canvasId, data, cityName = '') {
         const ctx = document.getElementById(canvasId);
         if (!ctx) return;
 
@@ -129,7 +130,10 @@ class ChartManager {
                 plugins: {
                     ...this.defaultOptions.plugins,
                     title: {
-                        display: false
+                        display: !!cityName,
+                        text: `温度趋势 - ${cityName}`,
+                        color: '#f1f5f9',
+                        font: { size: 14, weight: 'bold' }
                     }
                 }
             }
@@ -140,8 +144,9 @@ class ChartManager {
      * 创建辐照度分布图
      * @param {string} canvasId - Canvas元素ID
      * @param {array} data - 数据数组
+     * @param {string} cityName - 城市名称
      */
-    createRadiationChart(canvasId, data) {
+    createRadiationChart(canvasId, data, cityName = '') {
         const ctx = document.getElementById(canvasId);
         if (!ctx) return;
 
@@ -204,7 +209,10 @@ class ChartManager {
                 plugins: {
                     ...this.defaultOptions.plugins,
                     title: {
-                        display: false
+                        display: !!cityName,
+                        text: `辐照度分布 - ${cityName}`,
+                        color: '#f1f5f9',
+                        font: { size: 14, weight: 'bold' }
                     }
                 }
             }
@@ -215,8 +223,9 @@ class ChartManager {
      * 创建风速变化图
      * @param {string} canvasId - Canvas元素ID
      * @param {array} data - 数据数组
+     * @param {string} cityName - 城市名称
      */
-    createWindSpeedChart(canvasId, data) {
+    createWindSpeedChart(canvasId, data, cityName = '') {
         const ctx = document.getElementById(canvasId);
         if (!ctx) return;
 
@@ -244,10 +253,10 @@ class ChartManager {
             });
         }
 
-        if (data[0]?.wind_speed_80m !== undefined) {
+        if (data[0]?.wind_speed_100m !== undefined) {
             datasets.push({
-                label: '80米风速 (km/h)',
-                data: data.map(d => d.wind_speed_80m),
+                label: '100米风速 (km/h)',
+                data: data.map(d => d.wind_speed_100m),
                 borderColor: '#14b8a6',
                 backgroundColor: 'rgba(20, 184, 166, 0.1)',
                 borderWidth: 2,
@@ -267,7 +276,10 @@ class ChartManager {
                 plugins: {
                     ...this.defaultOptions.plugins,
                     title: {
-                        display: false
+                        display: !!cityName,
+                        text: `风速变化 - ${cityName}`,
+                        color: '#f1f5f9',
+                        font: { size: 14, weight: 'bold' }
                     }
                 }
             }
@@ -278,8 +290,9 @@ class ChartManager {
      * 创建降水量图
      * @param {string} canvasId - Canvas元素ID
      * @param {array} data - 数据数组
+     * @param {string} cityName - 城市名称
      */
-    createPrecipitationChart(canvasId, data) {
+    createPrecipitationChart(canvasId, data, cityName = '') {
         const ctx = document.getElementById(canvasId);
         if (!ctx) return;
 
@@ -312,7 +325,10 @@ class ChartManager {
                 plugins: {
                     ...this.defaultOptions.plugins,
                     title: {
-                        display: false
+                        display: !!cityName,
+                        text: `降水量 - ${cityName}`,
+                        color: '#f1f5f9',
+                        font: { size: 14, weight: 'bold' }
                     }
                 }
             }
@@ -374,6 +390,12 @@ class ChartManager {
                         ...this.defaultOptions.plugins.legend,
                         display: true,
                         position: 'top'
+                    },
+                    title: {
+                        display: true,
+                        text: `多城市对比: ${label}`,
+                        color: '#f1f5f9',
+                        font: { size: 14, weight: 'bold' }
                     }
                 }
             }

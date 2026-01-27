@@ -410,8 +410,8 @@ async function handleQuery() {
 
             appState.currentData = response.data;
 
-            // 显示数据
-            displayData(response.data);
+            const cityName = response.data.city_name || (appState.cities.find(c => c.id == cityId)?.city_name || '');
+            displayData(response.data, cityName);
         }
 
         // 启用导出按钮
@@ -591,16 +591,16 @@ function getIconSVG(type) {
 /**
  * 显示图表
  */
-function displayCharts(records) {
+function displayCharts(records, cityName = '') {
     // 限制数据点数量以提升性能
     const maxPoints = 500;
     const step = Math.ceil(records.length / maxPoints);
     const sampledData = records.filter((_, index) => index % step === 0);
 
-    chartManager.createTemperatureChart('temperatureChart', sampledData);
-    chartManager.createRadiationChart('radiationChart', sampledData);
-    chartManager.createWindSpeedChart('windSpeedChart', sampledData);
-    chartManager.createPrecipitationChart('precipitationChart', sampledData);
+    chartManager.createTemperatureChart('temperatureChart', sampledData, cityName);
+    chartManager.createRadiationChart('radiationChart', sampledData, cityName);
+    chartManager.createWindSpeedChart('windSpeedChart', sampledData, cityName);
+    chartManager.createPrecipitationChart('precipitationChart', sampledData, cityName);
 }
 
 /**
@@ -721,7 +721,7 @@ function displayComparisonData(data) {
     const filteredDetails = applyComparisonFilters(data.details);
     if (filteredDetails.length === 1) {
         // 如果只过滤出一个城市，则显示该城市的详细趋势
-        displayCharts(filteredDetails[0].hourly_data);
+        displayCharts(filteredDetails[0].hourly_data, filteredDetails[0].city_name);
     } else {
         // 否则显示对比图表
         displayComparisonCharts(filteredDetails);

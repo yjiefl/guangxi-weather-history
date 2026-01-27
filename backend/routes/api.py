@@ -89,6 +89,57 @@ def get_cities():
         }), 500
 
 
+@api_bp.route('/cities/search', methods=['GET'])
+def search_cities():
+    """搜索城市"""
+    query = request.args.get('q', '')
+    if not query:
+        return jsonify({'code': 200, 'message': '请输入搜索关键词', 'data': []})
+    try:
+        results = weather_service.search_city(query)
+        return jsonify({'code': 200, 'message': '搜索成功', 'data': results})
+    except Exception as e:
+        logger.error(f"搜索城市失败: {e}")
+        return jsonify({'code': 500, 'message': str(e), 'data': []})
+
+@api_bp.route('/cities/add', methods=['POST'])
+def add_city():
+    """添加城市到默认列表"""
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        lng = data.get('longitude')
+        lat = data.get('latitude')
+        reg = data.get('region', '广西')
+        
+        if not all([name, lng, lat]):
+            return jsonify({'code': 400, 'message': '缺少必要参数', 'data': None})
+            
+        # 如果城市已存在但被禁用，则启用它
+        existing = city_manager.get_city_by_name(name)
+        if existing:
+            city_manager.update_city_status(existing['id'], True)
+            return jsonify({'code': 200, 'message': '城市已恢复', 'data': {'id': existing['id']}})
+            
+        city_id = city_manager.add_city(name, lng, lat, reg)
+        return jsonify({'code': 200, 'message': '添加城市成功', 'data': {'id': city_id}})
+    except Exception as e:
+        logger.error(f"添加城市失败: {e}")
+        return jsonify({'code': 500, 'message': str(e), 'data': None})
+
+@api_bp.route('/cities/remove/<int:city_id>', methods=['DELETE'])
+def remove_city(city_id):
+    """从列表移除城市 (设置为不启用)"""
+    try:
+        success = city_manager.update_city_status(city_id, False)
+        if success:
+            return jsonify({'code': 200, 'message': '移除城市成功', 'data': None})
+        return jsonify({'code': 404, 'message': '城市未找到', 'data': None})
+    except Exception as e:
+        logger.error(f"移除城市失败: {e}")
+        return jsonify({'code': 500, 'message': str(e), 'data': None})
+
+
 @api_bp.route('/fields', methods=['GET'])
 def get_fields():
     """

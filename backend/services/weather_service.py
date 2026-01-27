@@ -16,12 +16,48 @@ from backend.config import AVAILABLE_FIELDS
 logger = logging.getLogger(__name__)
 
 
-class WeatherService:
-    """
-    天气服务类
-    负责从Open-Meteo API获取历史天气数据
-    """
-    
+    def search_city(self, query: str) -> List[Dict[str, Any]]:
+        """
+        搜索城市
+        
+        Args:
+            query: 搜索关键词
+            
+        Returns:
+            搜索到的城市列表
+        """
+        try:
+            url = f"https://geocoding-api.open-meteo.com/v1/search?name={query}&language=zh&count=10"
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            results = []
+            for item in data.get('results', []):
+                # 构造省/市/县描述
+                admin1 = item.get('admin1', '')
+                admin2 = item.get('admin2', '')
+                admin3 = item.get('admin3', '')
+                country = item.get('country', '')
+                
+                region_parts = [r for r in [country, admin1, admin2, admin3] if r]
+                region = " > ".join(region_parts)
+                
+                results.append({
+                    'name': item.get('name'),
+                    'latitude': item.get('latitude'),
+                    'longitude': item.get('longitude'),
+                    'region': region,
+                    'country': country,
+                    'admin1': admin1,
+                    'admin2': admin2,
+                    'admin3': admin3
+                })
+            return results
+        except Exception as e:
+            logger.error(f"查询城市失败: {e}")
+            return []
+
     def __init__(
         self, 
         base_url: str,

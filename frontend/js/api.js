@@ -241,6 +241,33 @@ class APIClient {
             throw error;
         }
     }
+
+    /**
+     * 搜索城市 (Geocoding)
+     * @param {string} query - 搜索关键词
+     * @returns {Promise} 搜索结果
+     */
+    async searchCities(query) {
+        return this.get(`/cities/search?q=${encodeURIComponent(query)}`);
+    }
+
+    /**
+     * 添加城市到默认列表
+     * @param {object} cityData - 城市信息
+     * @returns {Promise} 结果
+     */
+    async addCity(cityData) {
+        return this.post('/cities/add', cityData);
+    }
+
+    /**
+     * 从默认列表移除城市
+     * @param {number} cityId - 城市ID
+     * @returns {Promise} 结果
+     */
+    async removeCity(cityId) {
+        return this.request(`/cities/remove/${cityId}`, { method: 'DELETE' });
+    }
 }
 
 // 创建全局API客户端实例
