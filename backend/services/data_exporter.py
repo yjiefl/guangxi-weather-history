@@ -177,15 +177,30 @@ class DataExporter:
             df['weather_code'] = df['weather_code'].map(lambda x: f"{int(x)} ({weather_map.get(int(x), '未知')})" if pd.notnull(x) else x)
         
         # 如果指定了字段，确保包含我们新增的辅助字段
-        if fields:
-            available_fields = []
-            # 自动包含辅助字段（如果存在）
-            for helper in ['city', 'date', 'time']:
-                if helper in df.columns:
-                    available_fields.append(helper)
-            
-            available_fields.extend([f for f in fields if f in df.columns and f not in ['datetime', 'city', 'date', 'time']])
-            df = df[available_fields]
+        # 按照固定顺序排列核心字段，增加导出的整齐度 (Item 2 改进)
+        helper_cols = ['city', 'date', 'time']
+        core_order = [
+            'temperature_2m', 'relative_humidity_2m', 'dew_point_2m',
+            'precipitation', 'rain', 'snowfall', 'surface_pressure', 'cloud_cover',
+            'wind_speed_10m', 'wind_direction_10m', 'wind_gusts_10m',
+            'wind_speed_100m', 'wind_direction_100m',
+            'shortwave_radiation', 'direct_radiation', 'diffuse_radiation', 'direct_normal_irradiance',
+            'evapotranspiration', 'soil_temperature_0_to_7cm', 'soil_moisture_0_to_7cm',
+            'weather_code'
+        ]
+        
+        final_cols = [c for c in helper_cols if c in df.columns]
+        for c in core_order:
+            if c in df.columns:
+                if fields is None or c in fields:
+                    final_cols.append(c)
+        
+        # 处理未包含在 core_order 中的其他字段
+        for c in df.columns:
+            if c not in final_cols and c not in ['datetime', 'id', 'city_id', 'created_at', 'datetime_dt']:
+                final_cols.append(c)
+                
+        df = df[final_cols]
         
         # 重命名列为中文
         column_mapping = self._get_column_mapping()
@@ -317,10 +332,14 @@ class DataExporter:
             # 按日汇总（均值）
             daily_df = df.groupby(group_cols)[numeric_cols].mean().reset_index()
             
-            # 特殊处理：降水量和辐射应该是总和
-            sum_cols = ['降水量(mm)', '降雨量(mm)', '短波辐射(W/m²)', '直接辐射(W/m²)', '散射辐射(W/m²)']
+            # 特殊处理：降水量、辐射和蒸发量应该是总和 (Item 2 修复)
+            sum_cols = [
+                '降水量(mm)', '降雨量(mm)', '蒸发蒸腾量(mm)',
+                '短波辐射(W/m²)', '直接辐射(W/m²)', '散射辐射(W/m²)', 
+                '直接法向辐照度(W/m²)'
+            ]
             for col in sum_cols:
-                if col in df.columns:
+                if col in daily_df.columns:
                     daily_sum = df.groupby(group_cols)[col].sum().reset_index()
                     daily_df[col] = daily_sum[col]
             
