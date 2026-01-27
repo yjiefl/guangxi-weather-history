@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="广西历史天气数据查询系统 - 支持2022年至今的详细历史天气数据查询，包含辐照度、风速等专业气象数据">
+    <meta name="keywords" content="广西天气,历史天气,天气数据,辐照度,风速,气象数据">
+    <title>广西历史天气数据查询系统</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- 样式文件 -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+    <!-- 顶部导航栏 -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
+                            fill="currentColor" />
+                        <path
+                            d="M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6zm0 10c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4z"
+                            fill="currentColor" />
+                    </svg>
+                    <h1>广西历史天气数据查询系统</h1>
+                </div>
+                <div class="header-right">
+                    <div id="connectionStatus" class="status-indicator">
+                        <span class="status-dot online"></span>
+                        <span class="status-text">后端连接正常</span>
+                    </div>
+                    <button id="shutdownBtn" class="btn btn-tiny btn-danger" title="停止并关闭后台服务">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M13 3h-2v10h2V3zm4.83 2.17l-1.42 1.42C17.99 7.86 19 9.81 19 12c0 3.87-3.13 7-7 7s-7-3.13-7-7c0-2.19 1.01-4.14 2.58-5.42L6.17 5.17C4.23 6.82 3 9.26 3 12c0 4.97 4.03 9 9 9s9-4.03 9-9c0-2.74-1.23-5.18-3.17-6.83z"
+                                fill="currentColor" />
+                        </svg>
+                    </button>
+                    <nav class="nav">
+                        <a href="#query-panel" class="nav-link">参数设置</a>
+                        <a href="#dataDisplay" class="nav-link">数据图表</a>
+                        <a href="#dataTable" class="nav-link">详细数据</a>
+                        <a href="#management-panel" class="nav-link">数据管理</a>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- 主内容区 -->
+    <main class="main">
+        <div class="container">
+            <!-- 查询面板 -->
+            <section id="query-panel" class="query-panel">
+                <h2 class="section-title">查询参数</h2>
+                <div class="query-form">
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label>选择城市 (可多选)</label>
+                            <div class="field-selector city-selector-compact" id="citySelect">
+                                <p style="color: rgba(255,255,255,0.5);">加载中...</p>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="startDate">开始日期</label>
+                            <input type="date" id="startDate" class="form-control">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="endDate">结束日期</label>
+                            <input type="date" id="endDate" class="form-control">
+                        </div>
+
+                        <div class="form-group full-width" style="margin-top: 10px;">
+                            <label>快速选择时间段</label>
+                            <div class="quick-dates">
+                                <button class="btn btn-tiny" data-days="7">最近7天</button>
+                                <button class="btn btn-tiny" data-days="14">最近14天</button>
+                                <button class="btn btn-tiny" data-days="30">最近30天</button>
+                                <button class="btn btn-tiny" data-days="90">最近90天</button>
+                                <button class="btn btn-tiny" data-days="180">最近180天</button>
+                                <button class="btn btn-tiny" data-days="365">最近365天</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label>数据字段</label>
+                            <div class="field-selector" id="fieldSelector">
+                                <!-- 动态生成 -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button id="queryBtn" class="btn btn-primary">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"
+                                    fill="currentColor" />
+                            </svg>
+                            查询数据
+                        </button>
+                        <button id="exportExcelBtn" class="btn btn-secondary" disabled>
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z"
+                                    fill="currentColor" />
+                            </svg>
+                            导出Excel
+                        </button>
+                        <button id="exportCsvBtn" class="btn btn-secondary" disabled>
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z"
+                                    fill="currentColor" />
+                            </svg>
+                            导出CSV
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 加载状态 -->
+            <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+                <div class="spinner"></div>
+                <p>正在加载数据...</p>
+            </div>
+
+            <!-- 数据展示区 -->
+            <section id="dataDisplay" class="data-display" style="display: none;">
+                <!-- 数据筛选器 (Item 14 & 15) -->
+                <div class="filter-bar" id="dataFilterBar">
+                    <div class="filter-group">
+                        <label for="cityFilter">
+                            <svg class="btn-icon-tiny" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                                    fill="currentColor" />
+                            </svg>
+                            切换城市:
+                        </label>
+                        <select id="cityFilter" class="form-control-sm"></select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="dateFilter">
+                            <svg class="btn-icon-tiny" viewBox="0 0 24 24" fill="none"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"
+                                    fill="currentColor" />
+                            </svg>
+                            查看单日:
+                        </label>
+                        <select id="dateFilter" class="form-control-sm"></select>
+                    </div>
+                    <button id="resetFilterBtn" class="btn btn-tiny btn-secondary">显示全部结果</button>
+                </div>
+
+                <!-- 统计卡片 -->
+                <div class="stats-cards" id="statsCards">
+                    <!-- 动态生成 -->
+                </div>
+
+                <!-- 图表区域 -->
+                <div class="charts-section">
+                    <div class="chart-card">
+                        <h3 class="chart-title">温度趋势</h3>
+                        <canvas id="temperatureChart"></canvas>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3 class="chart-title">辐照度分布</h3>
+                        <canvas id="radiationChart"></canvas>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3 class="chart-title">风速变化</h3>
+                        <canvas id="windSpeedChart"></canvas>
+                    </div>
+
+                    <div class="chart-card">
+                        <h3 class="chart-title">降水量</h3>
+                        <canvas id="precipitationChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- 数据表格 -->
+                <div class="table-card">
+                    <h3 class="table-title">详细数据</h3>
+                    <div class="table-container">
+                        <table id="dataTable" class="data-table">
+                            <thead id="tableHead">
+                                <!-- 动态生成 -->
+                            </thead>
+                            <tbody id="tableBody">
+                                <!-- 动态生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- 底部信息栏 -->
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 广西历史天气数据查询系统 | 数据来源: Open-Meteo API | 作者: yjiefl</p>
+            <p class="footer-note">数据仅供参考，不作为官方气象数据使用</p>
+        </div>
+    </footer>
+
+    <!-- 数据管理面板 -->
+    <section id="management-panel" class="container" style="margin-top: 2rem; margin-bottom: 4rem;">
+        <div class="data-management-panel">
+            <h2 class="section-title">数据管理</h2>
+            <div class="management-tabs">
+                <button class="tab-btn active" data-tab="download">批量下载</button>
+                <button class="tab-btn" data-tab="check">完整性检查</button>
+                <button class="tab-btn" data-tab="stats">数据统计</button>
+            </div>
+
+            <!-- 批量下载标签页 -->
+            <div class="tab-content active" id="download-tab">
+                <div class="query-form">
+                    <div class="form-row">
+                        <div class="form-group full-width">
+                            <label>选择城市 (可多选)</label>
+                            <div class="field-selector city-selector-compact" id="downloadCitySelect">
+                                <p style="color: rgba(255,255,255,0.5);">加载中...</p>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="downloadStartDate">开始日期</label>
+                            <input type="date" id="downloadStartDate" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="downloadEndDate">结束日期</label>
+                            <input type="date" id="downloadEndDate" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="batchDownloadBtn" class="btn btn-primary">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path
+                                    d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2z"
+                                    fill="currentColor" />
+                            </svg>
+                            下载并保存到数据库
+                        </button>
+                        <button id="downloadAllCitiesBtn" class="btn btn-secondary">
+                            一键下载所有城市数据
+                        </button>
+                    </div>
+                    <div id="downloadProgressContainer" class="progress-box" style="display: none;">
+                        <div class="progress-header">
+                            <span class="progress-title">下载进度</span>
+                            <span class="progress-percentage">0%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" style="width: 0%;"></div>
+                        </div>
+                        <div class="progress-status">正在准备下载...</div>
+                        <button id="cancelDownloadBtn" class="btn btn-tiny btn-danger"
+                            style="margin-top: 10px;">取消下载</button>
+                    </div>
+                    <div id="downloadResult" class="result-message" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- 完整性检查标签页 -->
+            <div class="tab-content" id="check-tab">
+                <div class="query-form">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="checkCity">选择城市</label>
+                            <select id="checkCity" class="form-control">
+                                <option value="">加载中...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="checkStartDate">开始日期</label>
+                            <input type="date" id="checkStartDate" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label for="checkEndDate">结束日期</label>
+                            <input type="date" id="checkEndDate" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button id="checkCompletenessBtn" class="btn btn-primary">
+                            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" fill="currentColor" />
+                            </svg>
+                            检查数据完整性
+                        </button>
+                    </div>
+                    <div id="checkResult" class="completeness-result" style="display: none;"></div>
+                </div>
+            </div>
+
+            <!-- 数据统计标签页 -->
+            <div class="tab-content" id="stats-tab">
+                <div id="statsResult" class="stats-result"></div>
+                <div class="form-actions">
+                    <button id="refreshStatsBtn" class="btn btn-secondary">
+                        <svg class="btn-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path
+                                d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
+                                fill="currentColor" />
+                        </svg>
+                        刷新统计
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- JavaScript -->
+    <script src="js/api.js"></script>
+    <script src="js/charts.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/data-management.js"></script>
+</body>
+
+</html>
