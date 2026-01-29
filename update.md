@@ -57,13 +57,13 @@
 
 ### 待完成
 
-
+- 定时自动下载本日天气
 
 ### 后续改进
 
 - **QNAP NAS Docker 部署与维护方案**:
-    1. **部署**: 已在项目根目录提供 `Dockerfile` 和 `docker-compose.yml`。在 NAS 的 Container Station 中通过 Docker Compose 部署即可。
-    2. **持久化**: 务必将 `/app/data` 挂载到 NAS 共享文件夹，确保数据库文件不会因容器删除而丢失。
+    1. **部署**: 已在项目根目录提供 `Dockerfile` 和 `docker-compose.yml`。在 NAS 的 Container Station 中通过 Docker Compose 部署即可。 ✅已完成
+    2. **持久化**: 务必将 `/app/data` 挂载到 NAS 共享文件夹，确保数据库文件不会因容器删除而丢失。 ✅已完成
     3. **维护**: 开启 Git 同步或使用 Webhook 触发 `docker-compose build --no-cache && docker-compose up -d` 即可实现一键更新。
 - 实现用户账户系统
 - 数据分析功能增强（趋势分析、异常检测）
