@@ -236,8 +236,10 @@ async function startBatchDownload(cityIds, startDate, endDate) {
 
 /**
  * 更新进度条
+ * @param {string} currentCityName - 当前正在处理的城市名称
+ * @param {string} actionPrefix - 操作前缀，默认为"正在下载"
  */
-function updateProgress(currentCityName) {
+function updateProgress(currentCityName, actionPrefix = '正在下载') {
     const container = document.getElementById('downloadProgressContainer');
     if (!container) return;
 
@@ -249,7 +251,7 @@ function updateProgress(currentCityName) {
 
     if (progressBar) progressBar.style.width = `${percent}%`;
     if (percentText) percentText.textContent = `${percent}%`;
-    if (statusText) statusText.textContent = `正在下载: ${currentCityName} (${downloadState.completedChunks + 1}/${downloadState.totalChunks})`;
+    if (statusText) statusText.textContent = `${actionPrefix}: ${currentCityName} (${downloadState.completedChunks + 1}/${downloadState.totalChunks})`;
 }
 
 /**
@@ -359,8 +361,11 @@ async function loadDataStatistics() {
 
 /**
  * 处理批量导出
+ * 改进：添加进度提示 (Item 2)
  */
 async function handleExportBulk() {
+    if (downloadState.isDownloading) return;
+
     const cityIds = CommonUtils.getSelectedCityIds('dl-city-checkbox'); // 复用下载的选择
     const startDate = document.getElementById('downloadStartDate').value;
     const endDate = document.getElementById('downloadEndDate').value;
@@ -376,18 +381,92 @@ async function handleExportBulk() {
         return;
     }
 
-    showResultMessage('downloadResult', '准备导出数据，请稍候...', 'info');
+    // 初始化进度状态
+    downloadState.isDownloading = true;
+    downloadState.cancelRequested = false;
+    downloadState.totalChunks = cityIds.length;
+    downloadState.completedChunks = 0;
+
+    // 更新UI
+    const exportBtn = document.getElementById('exportBulkDataBtn');
+    const batchBtn = document.getElementById('batchDownloadBtn');
+    const allBtn = document.getElementById('downloadAllCitiesBtn');
+    
+    if (exportBtn) exportBtn.disabled = true;
+    if (batchBtn) batchBtn.disabled = true;
+    if (allBtn) allBtn.disabled = true;
+
+    const progressContainer = document.getElementById('downloadProgressContainer');
+    if (progressContainer) {
+        progressContainer.style.display = 'block';
+        progressContainer.querySelector('.progress-title').textContent = '文件准备进度';
+    }
+
+    const cancelBtn = document.getElementById('cancelDownloadBtn');
+    if (cancelBtn) cancelBtn.style.display = 'inline-block';
+
+    showResultMessage('downloadResult', '正在为导出准备数据，请稍候...', 'info');
 
     try {
-        await api.exportBulkData({
-            city_ids: cityIds,
-            start_date: startDate,
-            end_date: endDate,
-            format: 'excel'
-        });
-        showResultMessage('downloadResult', '导出文件已开始下载', 'success');
+        // 第一阶段：逐个城市确保数据已缓存/下载 (提高导出速度并提供反馈)
+        for (const cityId of cityIds) {
+            if (downloadState.cancelRequested) {
+                break;
+            }
+
+            const city = appState.cities.find(c => c.id === cityId);
+            const cityName = city ? city.name : `ID:${cityId}`;
+
+            updateProgress(cityName, '正在获取');
+
+            try {
+                // 调用 batchDownload 仅仅是为了让后端确保数据在 DB 中
+                // 这样最后的 exportBulkData 会非常快
+                await api.batchDownload({
+                    city_id: cityId,
+                    start_date: startDate,
+                    end_date: endDate
+                });
+            } catch (e) {
+                console.warn(`准备城市 ${cityName} 数据失败:`, e);
+                // 继续下一个，不中断整体导出
+            }
+
+            downloadState.completedChunks++;
+        }
+
+        if (!downloadState.cancelRequested) {
+            // 第二阶段：执行真正的大批量导出
+            const statusText = progressContainer?.querySelector('.progress-status');
+            if (statusText) statusText.textContent = '正在生成导出文件...';
+            
+            await api.exportBulkData({
+                city_ids: cityIds,
+                start_date: startDate,
+                end_date: endDate,
+                format: 'excel'
+            });
+            showResultMessage('downloadResult', '导出文件已开始下载', 'success');
+        } else {
+            showResultMessage('downloadResult', '导出已取消', 'warning');
+        }
+
     } catch (error) {
+        console.error('导出失败:', error);
         showResultMessage('downloadResult', '导出失败: ' + error.message, 'error');
+    } finally {
+        downloadState.isDownloading = false;
+        if (exportBtn) exportBtn.disabled = false;
+        if (batchBtn) batchBtn.disabled = false;
+        if (allBtn) allBtn.disabled = false;
+
+        // 延迟隐藏进度条
+        setTimeout(() => {
+            if (progressContainer) progressContainer.style.display = 'none';
+            if (cancelBtn) cancelBtn.style.display = 'none';
+            // 恢复标题
+            if (progressContainer) progressContainer.querySelector('.progress-title').textContent = '下载进度';
+        }, 1000);
     }
 }
 

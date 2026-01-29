@@ -486,6 +486,7 @@ def export_bulk_data():
                 'data': None
             }), 400
             
+        all_data = []
         # 获取所有可能的字段
         all_fields = []
         for cat in AVAILABLE_FIELDS.values():
@@ -514,11 +515,6 @@ def export_bulk_data():
             
         if not all_data:
             return jsonify({'code': 404, 'message': '选定范围内暂无数据，请先点击下载到数据库', 'data': None}), 404
-            
-        # 导出所有可能的字段（排除ID等内部字段）
-        all_fields = []
-        for cat in AVAILABLE_FIELDS.values():
-            all_fields.extend(cat.keys())
             
         filename = f"广西天气数据_批量_{start_date}_{end_date}"
         
