@@ -62,8 +62,24 @@ def create_app():
     # 初始化数据库管理器
     db_manager = DatabaseManager(DATABASE_PATH)
     
+    # 【新增】自动初始化数据库表 (Item 51)
+    try:
+        db_manager.init_database()
+        logger.info("数据库自动初始化/检查完成")
+    except Exception as e:
+        logger.error(f"数据库自动初始化失败: {e}")
+    
     # 初始化城市管理器
     city_manager = CityManager(db_manager)
+    
+    # 【新增】如果城市列表为空，则初始化默认城市 (Item 51)
+    try:
+        if not city_manager.get_all_cities():
+            from backend.config import GUANGXI_CITIES
+            city_manager.init_cities(GUANGXI_CITIES)
+            logger.info("初始城市数据导入完成")
+    except Exception as e:
+        logger.error(f"自动导入城市数据失败: {e}")
     
     # 初始化缓存管理器
     cache_manager = CacheManager(db_manager, CACHE_EXPIRE_HOURS)
