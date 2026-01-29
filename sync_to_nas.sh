@@ -6,6 +6,7 @@
 # ================= 配置区 =================
 NAS_USER="yjiefl"
 NAS_IP="192.168.3.10"
+NAS_PORT="22222"
 # 注意：QNAP 的共享文件夹路径通常在 /share/ 目录下。
 # 如果您的共享文件夹名为 "WebApps"，则路径通常为 /share/WebApps/weather-history
 NAS_DEST_PATH="/share/WebApps/weather-history"
@@ -32,9 +33,9 @@ if ! command -v rsync &> /dev/null; then
 fi
 
 # 3. 执行同步
-# 使用 -a (归档), -v (详细), -z (压缩)
+# 使用 -a (归档), -v (详细), -z (压缩), -e 指定端口
 # 排除掉不需要在服务器上运行的环境文件夹、数据库文件和日志
-rsync -avz --progress \
+rsync -avz --progress -e "ssh -p $NAS_PORT" \
     --exclude="venv/" \
     --exclude=".venv/" \
     --exclude="__pycache__/" \
