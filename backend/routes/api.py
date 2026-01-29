@@ -486,18 +486,26 @@ def export_bulk_data():
                 'data': None
             }), 400
             
-        all_data = []
+        # 获取所有可能的字段
+        all_fields = []
+        for cat in AVAILABLE_FIELDS.values():
+            all_fields.extend(cat.keys())
+            
         for city_id in city_ids:
             city_info = city_manager.get_city_by_id(city_id)
             if not city_info: continue
             
-            filters = {
-                'city_id': city_id,
-                'start_date': start_date,
-                'end_date': end_date + 'T23:59:59'
-            }
-            records = weather_service.db_manager.get_weather_data(filters)
+            # 使用 weather_service 获取数据，触发“缺失字段自动下载”逻辑
+            weather_data = weather_service.get_historical_weather(
+                longitude=city_info['longitude'],
+                latitude=city_info['latitude'],
+                start_date=start_date,
+                end_date=end_date,
+                fields=all_fields,
+                city_id=city_id
+            )
             
+            records = weather_data['hourly_data']
             # 为每条记录添加城市名称
             for r in records:
                 r['city'] = city_info['city_name']

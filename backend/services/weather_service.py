@@ -129,16 +129,30 @@ class WeatherService:
                 expected_hours = (d2 - d1).days * 24 + 24
                 
                 if len(db_data) >= expected_hours:
-                    logger.info(f"本地数据库命中: 找到 {len(db_data)} 条记录，满足期望的 {expected_hours} 小时")
-                    # 格式化输出，保持与 API 响应一致
-                    return {
-                        'latitude': latitude,
-                        'longitude': longitude,
-                        'timezone': timezone,
-                        'hourly_data': db_data
-                    }
-                else:
-                    logger.info(f"本地数据库不完整: 仅有 {len(db_data)}/{expected_hours} 小时，将回退到 API/缓存")
+                    # 3. 检查请求的字段在本地数据中是否均有数值 (Item 3 & 44 改进)
+                    # 只要有一个用户请求的字段在所有记录中都为 None，就认为该字段可能未曾下载，需要触发 API 请求
+                    is_complete = True
+                    if fields:
+                        for f in fields:
+                            if f in ['city', 'date', 'time', 'datetime']:
+                                continue
+                            # 如果该字段在本地数据中全部为 None，说明需要“增肥”
+                            if all(rec.get(f) is None for rec in db_data):
+                                logger.info(f"本地数据库虽然小时数足够({len(db_data)})，但缺失关键字段: {f}")
+                                is_complete = False
+                                break
+                    
+                    if is_complete:
+                        logger.info(f"本地数据库命中: 找到 {len(db_data)} 条记录，字段完整，满足期望")
+                        # 格式化输出，保持与 API 响应一致
+                        return {
+                            'latitude': latitude,
+                            'longitude': longitude,
+                            'timezone': timezone,
+                            'hourly_data': db_data
+                        }
+                    else:
+                        logger.info("本地数据库字段不全，将触发 API 请求以补全（增肥）缺失字段")
             except Exception as e:
                 logger.warning(f"本地数据库预查失败: {e}")
 
