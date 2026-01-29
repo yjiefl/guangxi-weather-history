@@ -253,59 +253,11 @@ class DataExporter:
             df: 数据DataFrame
         """
         try:
-            ws_summary = workbook.create_sheet('数据汇总')
-            
-            # 计算统计数据
-            summary_data = []
-            
-            # 数值列
-            numeric_columns = df.select_dtypes(include=['float64', 'int64']).columns
-            
-            for col in numeric_columns:
-                if col != '日期时间':
-                    stats = {
-                        '数据项': col,
-                        '平均值': round(df[col].mean(), 2) if not df[col].isna().all() else None,
-                        '最大值': round(df[col].max(), 2) if not df[col].isna().all() else None,
-                        '最小值': round(df[col].min(), 2) if not df[col].isna().all() else None,
-                        '总和': round(df[col].sum(), 2) if not df[col].isna().all() else None,
-                    }
-                    summary_data.append(stats)
-            
-            # 创建汇总DataFrame
-            summary_df = pd.DataFrame(summary_data)
-            
-            # 写入汇总数据
-            for r in dataframe_to_rows(summary_df, index=False, header=True):
-                ws_summary.append(r)
-            
-            # 设置表头样式
-            header_fill = PatternFill(start_color='4472C4', end_color='4472C4', fill_type='solid')
-            header_font = Font(color='FFFFFF', bold=True)
-            
-            for cell in ws_summary[1]:
-                cell.fill = header_fill
-                cell.font = header_font
-                cell.alignment = Alignment(horizontal='center', vertical='center')
-            
-            # 自动调整列宽
-            for column in ws_summary.columns:
-                max_length = 0
-                column_letter = column[0].column_letter
-                for cell in column:
-                    try:
-                        if len(str(cell.value)) > max_length:
-                            max_length = len(str(cell.value))
-                    except:
-                        pass
-                adjusted_width = min(max_length + 2, 30)
-                ws_summary.column_dimensions[column_letter].width = adjusted_width
-
-            # 新增：按日汇总表 (Item 15)
+            # 按照用户需求，取消整体数据汇总，仅保留每日汇总
             if '日期' in df.columns:
                 self._add_daily_summary_sheet(workbook, df)
             
-            logger.debug("添加汇总表成功")
+            logger.debug("添加每日汇总表成功")
             
         except Exception as e:
             logger.error(f"添加汇总表失败: {e}")
@@ -315,18 +267,18 @@ class DataExporter:
         try:
             ws_daily = workbook.create_sheet('每日汇总')
             
-            # 数值列（排除日期和城市）
-            numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
-            
             # 基础分组字段
             group_cols = ['日期']
             if '城市' in df.columns:
                 group_cols.append('城市')
             
-            # 按日汇总（均值）
+            # 数值列（排除日期和城市）
+            numeric_cols = df.select_dtypes(include=['float64', 'int64']).columns.tolist()
+            
+            # 按日基础汇总（均值）
             daily_df = df.groupby(group_cols)[numeric_cols].mean().reset_index()
             
-            # 特殊处理：降水量、辐射和蒸发量应该是总和 (Item 2 修复)
+            # 特殊处理：降水量、辐射和蒸发量应该是总和
             sum_cols = [
                 '降水量(mm)', '降雨量(mm)', '蒸发蒸腾量(mm)',
                 '短波辐射(W/m²)', '直接辐射(W/m²)', '散射辐射(W/m²)', 
@@ -334,16 +286,40 @@ class DataExporter:
             ]
             for col in sum_cols:
                 if col in daily_df.columns:
-                    # 确保是按日期和城市分组重新计算总和
                     daily_sum = df.groupby(group_cols)[col].sum().reset_index()
-                    # 按照索引对齐，将均值替换为总和
                     daily_df[col] = daily_sum[col]
+
+            # 增强功能：增加计算项 (主要天气, 日辐照量, 日平均风速)
+            
+            # 1. 主要天气 (取当日常见天气)
+            if '天气代码' in df.columns:
+                def get_mode_weather(x):
+                    modes = x.mode()
+                    return modes.iloc[0] if not modes.empty else None
+                
+                weather_mode = df.groupby(group_cols)['天气代码'].agg(get_mode_weather).reset_index()
+                daily_df['主要天气'] = weather_mode['天气代码']
+            
+            # 2. 日辐照量 (MJ/m²) = Sum(W/m²) * 3600 / 1,000,000
+            if '短波辐射(W/m²)' in df.columns:
+                daily_df['日辐照量(MJ/m²)'] = (daily_df['短波辐射(W/m²)'] * 0.0036).round(2)
+                
+            # 3. 日平均风速 (m/s) = mean(km/h) / 3.6
+            if '10米风速(km/h)' in df.columns:
+                # 注意：此时 daily_df['10米风速(km/h)'] 已经是均值了
+                daily_df['日平均风速(m/s)'] = (daily_df['10米风速(km/h)'] / 3.6).round(2)
+            
+            # 调整列顺序，将重要字段提前
+            cols = daily_df.columns.tolist()
+            priority_cols = ['日期', '城市', '主要天气', '日辐照量(MJ/m²)', '日平均风速(m/s)']
+            new_order = [c for c in priority_cols if c in cols] + [c for c in cols if c not in priority_cols]
+            daily_df = daily_df[new_order]
             
             # 写入数据
             for r in dataframe_to_rows(daily_df, index=False, header=True):
                 ws_daily.append(r)
                 
-            # 设置样式（同上）
+            # 设置样式
             header_fill = PatternFill(start_color='70AD47', end_color='70AD47', fill_type='solid')
             header_font = Font(color='FFFFFF', bold=True)
             for cell in ws_daily[1]:

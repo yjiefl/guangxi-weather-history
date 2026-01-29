@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  weather-history:
+    build: .
+    container_name: weather-history
+    image: weather-history:latest
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+    restart: always
