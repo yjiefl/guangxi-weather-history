@@ -5,12 +5,14 @@
 # 日期: 2026-01-31
 
 # --- 配置区 ---
-VPS_USER="root"
-VPS_IP="107.174.62.30"
+SSH_ALIAS="racknerd"
 VPS_PATH="/root/apps/weather-history"
 # --- --- --- ---
 
-echo "📡 准备同步代码到 VPS ($VPS_IP)..."
+echo "📡 准备同步代码到 VPS ($SSH_ALIAS)..."
+
+# 确保远程目录存在
+ssh $SSH_ALIAS "mkdir -p $VPS_PATH"
 
 # 使用 rsync 进行增量同步
 rsync -avz --delete \
@@ -23,13 +25,13 @@ rsync -avz --delete \
     --exclude ".DS_Store" \
     --exclude "data/*.db" \
     --exclude "logs/*.log" \
-    ./ $VPS_USER@$VPS_IP:$VPS_PATH
+    ./ $SSH_ALIAS:$VPS_PATH
 
 if [ $? -eq 0 ]; then
     echo "✅ 同步成功！"
     echo "🛠  正在远程触发 Docker 重建与启动..."
     
-    ssh $VPS_USER@$VPS_IP "cd $VPS_PATH && docker compose up -d --build"
+    ssh $SSH_ALIAS "cd $VPS_PATH && docker compose up -d --build"
     
     if [ $? -eq 0 ]; then
         echo "🚀 部署完成！"
