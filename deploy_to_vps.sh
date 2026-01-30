@@ -31,7 +31,7 @@ if [ $? -eq 0 ]; then
     echo "✅ 同步成功！"
     echo "🛠  正在远程触发 Docker 重建与启动..."
     
-    ssh $SSH_ALIAS "cd $VPS_PATH && docker compose up -d --build"
+    ssh $SSH_ALIAS "cd $VPS_PATH && docker-compose up -d --build"
     
     if [ $? -eq 0 ]; then
         echo "🚀 部署完成！"
