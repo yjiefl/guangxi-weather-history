@@ -496,17 +496,18 @@ graph LR
     C --> D
 ```
 
-### 9.2 生产部署（可选）
+### 9.2 生产部署 (NAS / VPS)
 
 ```mermaid
 graph TB
-    subgraph "服务器"
-        A[Nginx] --> B[Gunicorn]
-        B --> C[Flask App]
+    subgraph "服务器 (NAS:192.168.3.10 / VPS:107.174.62.30)"
+        A[Nginx (可选)] --> B[Docker Compose]
+        B --> C[Flask App Container]
         C --> D[SQLite DB]
     end
     
     E[用户浏览器] --> A
+    E --> B
 ```
 
 ## 10. 开发计划

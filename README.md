@@ -326,6 +326,19 @@ git pull
 docker-compose up -d --build
 ```
 
+### 自动化部署与同步
+
+为了方便在本地 macOS 环境与远程 NAS 或 VPS 之间同步代码，我们提供了以下脚本：
+
+- **NAS 同步 (本地局域网)**:
+  ```bash
+  ./sync_to_nas.sh
+  ```
+- **VPS 部署 (公网 107.174.62.30)**:
+  ```bash
+  ./deploy_to_vps.sh
+  ```
+
 ## 🤝 贡献指南
 
 1. Fork 本项目
