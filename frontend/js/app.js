@@ -194,43 +194,17 @@ function bindEvents() {
         });
     });
 
-    // 停止服务按钮 (采用两步式点击，避免弹窗拦截)
+    // 停止服务按钮 (增加确认提示)
     const shutdownBtn = document.getElementById('shutdownBtn');
-    let shutdownArmed = false;
-    let armedTimer = null;
-
     if (shutdownBtn) {
         shutdownBtn.onclick = async () => {
-            if (!shutdownArmed) {
-                // 第一步：激活确认状态
-                shutdownArmed = true;
-                shutdownBtn.style.transform = 'scale(1.1)';
-                shutdownBtn.style.color = '#ff2d55'; // 更亮的红色提示
-                shutdownBtn.style.fontWeight = '700';
-                shutdownBtn.textContent = '确认退出?';
-                shutdownBtn.title = '再次点击确定关闭';
-
-                // 提示文字
-                const originalText = document.querySelector('.status-text').textContent;
-                document.querySelector('.status-text').textContent = '⚠️ 再次点击确认关闭';
-                document.querySelector('.status-text').style.color = '#ff4d4d';
-
-                // 3秒后还原
-                armedTimer = setTimeout(() => {
-                    shutdownArmed = false;
-                    shutdownBtn.style.transform = '';
-                    shutdownBtn.style.color = '';
-                    shutdownBtn.textContent = '退出';
-                    shutdownBtn.title = '停止并关闭后台服务';
-                    document.querySelector('.status-text').textContent = originalText;
-                    document.querySelector('.status-text').style.color = '';
-                }, 3000);
-            } else {
-                // 第二步：执行关闭
-                clearTimeout(armedTimer);
+            if (confirm("确定要停止并关闭后台服务吗？\n关闭后网页将无法查询数据，如需再次使用需重新通过运行脚本启动。")) {
                 shutdownBtn.textContent = '正在退出...';
-                document.querySelector('.status-dot').className = 'status-dot offline';
-                document.querySelector('.status-text').textContent = '正在关机...';
+                shutdownBtn.disabled = true;
+                const statusDot = document.querySelector('.status-dot');
+                const statusText = document.querySelector('.status-text');
+                if (statusDot) statusDot.className = 'status-dot offline';
+                if (statusText) statusText.textContent = '正在关机...';
 
                 // 禁用交互
                 document.body.style.opacity = '0.5';
