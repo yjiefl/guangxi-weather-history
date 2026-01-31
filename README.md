@@ -9,14 +9,14 @@
 
 一个优雅的历史天气数据查询系统，支持全国主要城市2022年至今的详细历史天气数据查询、可视化和导出功能。
 
-**包含辐照度、多高度风速等专业气象数据**
+## 包含辐照度、多高度风速等专业气象数据
 
 </div>
 
 ## ✨ 功能特性
 
 - 🌤️ **长期历史数据**: 支持查询2022年至今的历史天气数据（可扩展至1940年）
-- 📊 **详细气象数据**: 
+- 📊 **详细气象数据**:
   - 基础数据：温度、湿度、降水、气压、云量
   - **辐照度数据**：短波辐射、直接辐射、散射辐射、DNI等
   - **风速数据**：10m、80m、120m、180m多高度风速和风向
@@ -54,17 +54,20 @@
 ## 📊 数据字段说明
 
 ### 基础气象数据
+
 - 温度（2m高度）、相对湿度、露点温度
 - 降水量、降雨量、降雪量
 - 地面气压、云量、能见度
 
 ### 辐照度数据 ☀️
+
 - **短波辐射** (Shortwave Radiation): 总太阳辐射
 - **直接辐射** (Direct Radiation): 直接太阳辐射
 - **散射辐射** (Diffuse Radiation): 散射太阳辐射
 - **直接法向辐照度** (DNI): 垂直于太阳光线的辐射强度
 
 ### 风速数据 💨
+
 - **10米风速/风向**: m/s (米/秒)
 - **80米风速**: m/s (米/秒)
 - **120米风速**: m/s (米/秒)
@@ -82,39 +85,45 @@
 ### 安装步骤
 
 1. **克隆项目**
+
 ```bash
 git clone https://github.com/yjiefl/guangxi-weather-history.git
 cd guangxi-weather-history
 ```
 
-2. **创建虚拟环境**
+1. **创建虚拟环境**
+
 ```bash
 python3 -m venv venv
 source venv/bin/activate  # macOS/Linux
 ```
 
-3. **安装依赖**
+1. **安装依赖**
+
 ```bash
 pip install -r requirements.txt
 ```
 
-4. **初始化数据库**
+1. **初始化数据库**
+
 ```bash
 python backend/init_db.py
 ```
 
-5. **启动服务**
+1. **启动服务**
+
 ```bash
 python backend/app.py
 ```
 
-6. **访问应用**
+1. **访问应用**
 
 打开浏览器访问: `http://localhost:5001` (注意：默认端口已调整为 5001)
 
 ### macOS 快速启动 (推荐)
 
 在项目根目录下，直接双击运行 `start.command`。它会自动：
+
 1. 检测并创建虚拟环境。
 2. 安装所有依赖。
 3. 初始化数据库。
@@ -122,7 +131,7 @@ python backend/app.py
 
 ## 📁 项目结构
 
-```
+```text
 guangxi-weather-history/
 ├── backend/                 # 后端代码
 │   ├── app.py              # Flask应用主入口
@@ -162,6 +171,7 @@ guangxi-weather-history/
 ## 🔧 技术栈
 
 ### 后端
+
 - **Flask**: 轻量级Web框架
 - **SQLite**: 本地数据库和缓存
 - **Pandas**: 数据处理和分析
@@ -169,12 +179,14 @@ guangxi-weather-history/
 - **openpyxl**: Excel文件处理
 
 ### 前端
+
 - **HTML5 + CSS3**: 页面结构和样式（玻璃态设计）
 - **Vanilla JavaScript**: 业务逻辑
 - **Chart.js**: 数据可视化
 - **Google Fonts (Inter)**: 现代字体
 
 ### 外部API
+
 - **Open-Meteo Historical Weather API**: 免费历史天气数据源
   - 数据范围: 1940年至今
   - 数据精度: 小时级
@@ -184,11 +196,13 @@ guangxi-weather-history/
 ## 📖 API文档
 
 ### 获取城市列表
+
 ```http
 GET /api/cities
 ```
 
 **响应示例:**
+
 ```json
 {
   "code": 200,
@@ -204,6 +218,7 @@ GET /api/cities
 ```
 
 ### 查询历史天气
+
 ```http
 POST /api/weather/query
 Content-Type: application/json
@@ -217,6 +232,7 @@ Content-Type: application/json
 ```
 
 **响应示例:**
+
 ```json
 {
   "code": 200,
@@ -235,6 +251,7 @@ Content-Type: application/json
 ```
 
 ### 导出数据
+
 ```http
 POST /api/weather/export
 Content-Type: application/json
@@ -249,6 +266,7 @@ Content-Type: application/json
 ```
 
 ### 获取可用数据字段
+
 ```http
 GET /api/fields
 ```
@@ -256,11 +274,13 @@ GET /api/fields
 ## 🧪 测试
 
 运行单元测试：
+
 ```bash
 pytest tests/ -v
 ```
 
 运行测试并生成覆盖率报告：
+
 ```bash
 pytest tests/ --cov=backend --cov-report=html
 ```
@@ -268,6 +288,7 @@ pytest tests/ --cov=backend --cov-report=html
 ## 📊 使用示例
 
 ### 查询南宁2024年1月的天气数据
+
 1. 打开应用
 2. 选择城市：南宁
 3. 选择日期范围：2024-01-01 至 2024-01-31
@@ -277,6 +298,7 @@ pytest tests/ --cov=backend --cov-report=html
 7. 点击"导出Excel"下载数据
 
 ### 对比多个城市的辐照度数据
+
 1. 分别查询多个城市的数据
 2. 使用对比功能查看辐照度差异
 3. 导出对比报告
@@ -311,16 +333,19 @@ pytest tests/ --cov=backend --cov-report=html
 
 1. **进入项目目录**
 2. **构建并启动容器**
+
 ```bash
 docker-compose up -d --build
 ```
-3. **访问应用**
+
+1. **访问应用**
 访问 `http://<NAS_IP>:5001`。
 
 ### 维护与更新
 
 - **持久化数据**: 数据库存储在 `./data/weather.db`，已通过 `docker-compose.yml` 挂载，容器更新不会丢失数据。
-- **一键更新**: 
+- **一键更新**:
+
 ```bash
 git pull
 docker-compose up -d --build
@@ -331,10 +356,13 @@ docker-compose up -d --build
 为了方便在本地 macOS 环境与远程 NAS 或 VPS 之间同步代码，我们提供了以下脚本：
 
 - **NAS 同步 (本地局域网)**:
+
   ```bash
   ./sync_to_nas.sh
   ```
+
 - **VPS 部署 (公网 107.174.62.30)**:
+
   ```bash
   ./deploy_to_vps.sh
   ```
@@ -367,4 +395,3 @@ docker-compose up -d --build
 本系统使用的历史天气数据来自Open-Meteo API，基于ERA5等权威再分析数据集。数据空间分辨率约为9-11km，适用于区域气候研究、可再生能源评估等应用场景。
 
 **注意**: 历史数据有5天延迟，如需最近几天的数据，请使用预报API的past_days功能。
-
