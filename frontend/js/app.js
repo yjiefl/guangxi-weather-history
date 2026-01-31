@@ -207,6 +207,16 @@ function bindEvents() {
         document.getElementById('dateFilter').value = 'all';
         handleFilterChange();
     });
+
+    // 天气实况刷新按钮
+    const refreshLiveBtn = document.getElementById('refreshLiveBtn');
+    if (refreshLiveBtn) {
+        refreshLiveBtn.addEventListener('click', () => {
+            if (appState.currentLiveCityId) {
+                handleLiveCitySelect(appState.currentLiveCityId);
+            }
+        });
+    }
 }
 
 /**
@@ -1009,12 +1019,12 @@ function renderLiveCitySelector() {
 
     container.innerHTML = '';
     appState.cities.forEach(city => {
-        const chip = document.createElement('div');
-        chip.className = 'city-chip';
-        if (appState.currentLiveCityId === city.id) chip.classList.add('active');
-        chip.textContent = city.name;
-        chip.onclick = () => handleLiveCitySelect(city.id);
-        container.appendChild(chip);
+        const btn = document.createElement('button');
+        btn.className = 'city-btn';
+        if (appState.currentLiveCityId === city.id) btn.classList.add('active');
+        btn.textContent = city.name;
+        btn.onclick = () => handleLiveCitySelect(city.id);
+        container.appendChild(btn);
     });
 }
 
@@ -1024,13 +1034,13 @@ function renderLiveCitySelector() {
 async function handleLiveCitySelect(cityId) {
     appState.currentLiveCityId = cityId;
     
-    // 更新 UI 样式
-    document.querySelectorAll('#liveCitySelect .city-chip').forEach(chip => {
+    // 更新 UI 样式 (Sidebar Buttons)
+    document.querySelectorAll('#liveCitySelect .city-btn').forEach(btn => {
         const cityInfo = appState.cities.find(c => c.id === cityId);
-        if (cityInfo && chip.textContent === cityInfo.name) {
-            chip.classList.add('active');
+        if (cityInfo && btn.textContent === cityInfo.name) {
+            btn.classList.add('active');
         } else {
-            chip.classList.remove('active');
+            btn.classList.remove('active');
         }
     });
 
@@ -1061,71 +1071,389 @@ async function handleLiveCitySelect(cityId) {
     }
 }
 
+// --- Weather Icons SVG Map (Inline) ---
+const WEATHER_ICONS = {
+    // ☀️ 晴 (Sunny)
+    'sunny': `<svg viewBox="0 0 64 64" class="w-full h-full"><circle cx="32" cy="32" r="14" fill="#f59e0b"/><path d="M32 8V2m0 60V56m24-24h6M2 32h6m42-17l4-4M10 54l4-4m34 4l4 4M10 10l4 4" stroke="#f59e0b" stroke-width="4" stroke-linecap="round"/></svg>`,
+    // ⛅ 多云 (Cloudy) - Specific fix for sunny-cloudy
+    'cloudy': `<svg viewBox="0 0 64 64" class="w-full h-full"><circle cx="38" cy="26" r="10" fill="#f59e0b"/><path d="M38 10v4m16 12h4m-4-12l-2 2m-20 0l-2-2" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/><path d="M46 48a14 14 0 000-28 6 6 0 00-6 2 12 12 0 10-22 10h28z" fill="#f3f4f6" stroke="#9ca3af" stroke-width="2" stroke-linejoin="round"/></svg>`,
+    // ☁️ 阴 (Overcast)
+    'overcast': `<svg viewBox="0 0 64 64" class="w-full h-full"><path d="M46 46a14 14 0 000-28 6 6 0 00-6 2 12 12 0 10-22 10h28z" fill="#9ca3af" stroke="#4b5563" stroke-width="2" stroke-linejoin="round"/></svg>`,
+    // 🌧️ 雨 (Rain)
+    'rain': `<svg viewBox="0 0 64 64" class="w-full h-full"><path d="M46 40a14 14 0 000-28 6 6 0 00-6 2 12 12 0 10-22 10h28z" fill="#d1d5db" stroke="#9ca3af" stroke-width="2"/><path d="M26 46l-4 8m10-8l-4 8m10-8l-4 8" stroke="#3b82f6" stroke-width="3" stroke-linecap="round"/></svg>`,
+    // ⚡ 雷 (Thunder)
+    'thunder': `<svg viewBox="0 0 64 64" class="w-full h-full"><path d="M46 38a14 14 0 000-28 6 6 0 00-6 2 12 12 0 10-22 10h28z" fill="#6b7280" stroke="#4b5563" stroke-width="2"/><path d="M36 40l-8 12h6l-4 10" stroke="#f59e0b" stroke-width="3" stroke-linecap="round" fill="none"/></svg>`,
+    // ❄️ 雪 (Snow)
+    'snow': `<svg viewBox="0 0 64 64" class="w-full h-full"><circle cx="32" cy="32" r="26" fill="none" stroke="#e5e7eb" stroke-width="2"/><path d="M32 16v32m-14-18l28 4m-28 4l28-4" stroke="#bfdbfe" stroke-width="3" stroke-linecap="round"/></svg>`
+};
+
+function getIconKey(code) {
+    if ([0, 1].includes(code)) return 'sunny';
+    if ([2, 3].includes(code)) return 'cloudy';
+    if ([45, 48].includes(code)) return 'overcast';
+    if ([51, 53, 55, 61, 63, 65, 80, 81, 82].includes(code)) return 'rain';
+    if ([95, 96, 99].includes(code)) return 'thunder';
+    if ([71, 73, 75, 77, 85, 86].includes(code)) return 'snow';
+    return 'sunny'; 
+}
+
 /**
- * 渲染实时天气卡片
+ * 渲染实时天气 (新版)
  */
 function renderCurrentWeather(data) {
-    const cityEl = document.getElementById('liveCityName');
+    const cityEl = document.getElementById('currentCityNameDisplay');
     const tempEl = document.getElementById('currentTemp');
     const nameEl = document.getElementById('currentWeatherName');
+    const iconEl = document.getElementById('currentIcon');
     const windEl = document.getElementById('currentWind');
+    const radEl = document.getElementById('currentRadiation');
     const timeEl = document.getElementById('currentUpdateTime');
     
     if (cityEl) cityEl.textContent = data.city_name;
-    if (tempEl) tempEl.textContent = data.temperature.toFixed(1);
+    if (tempEl) tempEl.textContent = data.temperature ? data.temperature.toFixed(1) : '--';
     if (nameEl) nameEl.textContent = data.weather_name;
-    if (windEl) windEl.textContent = `${(data.wind_speed / 3.6).toFixed(1)} m/s`;
-    if (timeEl) timeEl.textContent = data.update_time.split(' ')[1];
     
-    // 图标
-    const weatherInfo = weatherCodeMap[data.weather_code] || { icon: '☀️' };
-    const iconEl = document.getElementById('currentWeatherIcon');
-    if (iconEl) iconEl.textContent = weatherInfo.icon;
+
+    // Icon Logic
+    if (iconEl) {
+        // Use SVG map
+        const key = getIconKey(data.weather_code);
+        iconEl.innerHTML = WEATHER_ICONS[key] || WEATHER_ICONS['sunny'];
+        // Remove class based icon if previously added
+        iconEl.className = `weather-icon-huge`; 
+    }
+    
+    if (windEl) windEl.textContent = `${(data.wind_speed / 3.6).toFixed(1)} m/s`;
+    if (radEl) radEl.textContent = `${data.radiation.toFixed(0)} W/m²`;
+    if (timeEl) timeEl.textContent = data.update_time.split(' ')[1];
 }
 
+// --- Global Chart Instances ---
+let todayChartInstance = null;
+let tomorrowChartInstance = null;
+let detailChartInstance = null;
+
+// --- Helper: Get Start of Day ---
+function getStartOfDay(d) {
+    const date = new Date(d);
+    date.setHours(0,0,0,0);
+    return date.getTime();
+}
+
+// --- Global Reference to Hourly Data ---
+let currentTodayHourly = [];
+let currentTomorrowHourly = [];
+
 /**
- * 渲染预报数据与图表
+ * 渲染预报 (今日/明日图表 + 7天列表 + 详情)
  */
 function renderForecast(data) {
     const list = document.getElementById('forecastList');
-    if (!list) return;
+    if (list) list.innerHTML = '';
+    
+    // 1. 限制为未来 7 天
+    const forecasts = (data.daily_forecast || []).slice(0, 7);
+    const hourly = data.hourly_forecast || [];
+    currentAllHourlyData = hourly; 
 
-    list.innerHTML = '';
+    // 2. 准备今日/明日数据
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    
+    const tomorrowDate = new Date(now);
+    tomorrowDate.setDate(now.getDate() + 1);
+    const tomorrowStr = tomorrowDate.toISOString().split('T')[0];
 
-    const labels = [];
-    const tempsMax = [];
-    const tempsMin = [];
+    // 今日趋势使用 15 分钟高精度数据
+    const minutely = data.minutely_15_forecast || [];
+    currentTodayHourly = minutely.filter(h => h.time.startsWith(todayStr));
+    
+    // 明日趋势维持 1小时 精度 (或根据需要也可改为15分钟，目前遵循请求仅今日)
+    currentTomorrowHourly = hourly.filter(h => h.time.startsWith(tomorrowStr));
 
-    data.daily_forecast.forEach((day, index) => {
-        // 1. 列表渲染
-        const item = document.createElement('div');
-        item.className = 'forecast-item';
-        
+    // 3. 初始渲染图表 (应用 toggle 状态)
+    updateChartsFromToggles();
+
+    // 4. 渲染 7 天预报列表
+    forecasts.forEach((day, index) => {
+        const div = document.createElement('div');
+        div.className = 'forecast-item-h';
+        div.onclick = () => openDetailModal(day, hourly);
+
         const dateObj = new Date(day.date);
-        const dateStr = index === 0 ? '今天' : `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+        const dateStr = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+        const weatherName = day.weather_name || '未知';
         
-        const weatherInfo = weatherCodeMap[day.weather_code] || { icon: '☀️' };
-
-        item.innerHTML = `
-            <div class="forecast-date">${dateStr}</div>
-            <div class="forecast-icon">${weatherInfo.icon}</div>
-            <div class="forecast-name">${day.weather_name}</div>
-            <div class="forecast-temp">
-                <span class="high">${day.temp_max.toFixed(0)}°</span>
-                <span class="low">${day.temp_min.toFixed(0)}°</span>
+        div.innerHTML = `
+            <div class="fi-date">${dateStr}</div>
+            <div style="width: 48px; height: 48px; margin: 8px 0;">
+                 ${WEATHER_ICONS[getIconKey(day.weather_code)] || WEATHER_ICONS['sunny']}
+            </div>
+            <div class="text-xs text-gray-500 mb-1">${weatherName}</div>
+            <div class="fi-temps">
+                <span class="fi-min">${day.temp_min.toFixed(0)}°</span>
+                <span class="text-gray-300">/</span>
+                <span class="fi-max">${day.temp_max.toFixed(0)}°</span>
             </div>
         `;
-        list.appendChild(item);
+        if (list) list.appendChild(div);
+    });
+}
 
-        // 2. 准备图表数据
-        labels.push(dateStr);
-        tempsMax.push(day.temp_max);
-        tempsMin.push(day.temp_min);
+// --- Toggles Handler ---
+function updateChartsFromToggles() {
+    // Read Checkbox States
+    const showTemp = document.querySelector('.chart-toggle[value="temp"]')?.checked ?? true;
+    const showRain = document.querySelector('.chart-toggle[value="rain"]')?.checked ?? true;
+    const showWind = document.querySelector('.chart-toggle[value="wind"]')?.checked ?? false;
+    const showRad = document.querySelector('.chart-toggle[value="radiation"]')?.checked ?? false;
+    
+    const options = { showTemp, showRain, showWind, showRad };
+
+    // Render Both Charts
+    renderGenericHourlyChart('todayChart', currentTodayHourly, todayChartInstance, (inst) => todayChartInstance = inst, options);
+    renderGenericHourlyChart('tomorrowChart', currentTomorrowHourly, tomorrowChartInstance, (inst) => tomorrowChartInstance = inst, options);
+}
+
+// Remove old listeners to avoid duplicates if re-run, then add new
+const toggles = document.querySelectorAll('.chart-toggle');
+toggles.forEach(chk => {
+    chk.onchange = updateChartsFromToggles; // Bind directly
+});
+
+
+// --- Generic Chart Renderer (Enhanced) ---
+function renderGenericHourlyChart(canvasId, data, instanceRef, setInstance, options = {}) {
+    const ctx = document.getElementById(canvasId);
+    if (!ctx) return;
+    
+    if (instanceRef) {
+        instanceRef.destroy();
+    }
+    
+    if (!data || data.length === 0) return;
+
+    const labels = data.map(d => d.time.split('T')[1].substring(0, 5));
+    const datasets = [];
+
+    // 1. Temperature
+    if (options.showTemp) {
+        datasets.push({
+            type: 'line',
+            label: '气温 (°C)',
+            data: data.map(d => d.temp),
+            borderColor: '#ef4444',
+            backgroundColor: 'rgba(239, 68, 68, 0.1)',
+            borderWidth: 2,
+            pointRadius: 1,
+            tension: 0.4,
+            yAxisID: 'y',
+            fill: true
+        });
+    }
+
+    // 2. Rain Probability
+    if (options.showRain) {
+        datasets.push({
+            type: 'bar',
+            label: '降水概率 (%)',
+            data: data.map(d => d.pop),
+            backgroundColor: 'rgba(59, 130, 246, 0.3)',
+            yAxisID: 'y1',
+            barPercentage: 0.6
+        });
+    }
+
+    // 3. Wind Speed
+    if (options.showWind) {
+        datasets.push({
+            type: 'line',
+            label: '风速 (km/h)',
+            data: data.map(d => d.wind),
+            borderColor: '#8b5cf6',
+            borderDash: [5, 5],
+            borderWidth: 2,
+            yAxisID: 'y2',
+            tension: 0.4,
+            pointRadius: 0
+        });
+    }
+
+    // 4. Radiation
+    if (options.showRad) {
+        datasets.push({
+            type: 'line',
+            label: '辐照度 (W/m²)',
+            data: data.map(d => d.radiation),
+            borderColor: '#f97316',
+            backgroundColor: 'rgba(249, 115, 22, 0.1)',
+            borderWidth: 1.5,
+            yAxisID: 'y3',
+            tension: 0.4,
+            pointRadius: 0,
+            fill: false
+        });
+    }
+
+    const newInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { display: true, position: 'top' }, // Show Legend
+                tooltip: { mode: 'index', intersect: false }
+            },
+            scales: {
+                x: { grid: { display: false }, ticks: { maxTicksLimit: 8 } },
+                y: {
+                    type: 'linear',
+                    display: options.showTemp,
+                    position: 'left',
+                    grid: { color: 'rgba(0,0,0,0.05)' },
+                    title: { display: true, text: '气温' }
+                },
+                y1: {
+                    type: 'linear',
+                    display: options.showRain,
+                    position: 'right',
+                    min: 0, max: 100,
+                    grid: { display: false },
+                    title: { display: true, text: '概率' }
+                },
+                y2: {
+                    type: 'linear',
+                    display: options.showWind,
+                    position: 'right',
+                    grid: { display: false },
+                    title: { display: true, text: '风速' }
+                },
+                y3: {
+                    type: 'linear',
+                    display: options.showRad,
+                    position: 'right',
+                    grid: { display: false },
+                    title: { display: true, text: '辐照' }
+                }
+            }
+        }
     });
 
-    // 3. 渲染预报图表
-    renderForecastChart(labels, tempsMax, tempsMin);
+    if (setInstance) setInstance(newInstance);
 }
+
+// --- Detail Modal Logic ---
+function openDetailModal(dayData, allHourly) {
+    const modal = document.getElementById('detailModal');
+    const title = document.getElementById('modalDateTitle');
+    if(!modal) return;
+    
+    title.innerText = `${dayData.date} 全天详细预报`;
+    modal.classList.add('open');
+
+    const targetDateStr = dayData.date;
+    const dayHourly = allHourly.filter(h => h.time.startsWith(targetDateStr));
+
+    renderDetailChart(dayHourly);
+}
+
+function closeDetailModal() {
+    const modal = document.getElementById('detailModal');
+    if(modal) modal.classList.remove('open');
+}
+
+window.onclick = function(event) {
+     const modal = document.getElementById('detailModal');
+     if (event.target == modal) {
+         closeDetailModal();
+     }
+}
+
+function renderDetailChart(data) {
+    const ctx = document.getElementById('detailChart');
+    if (!ctx) return;
+    
+    if (detailChartInstance) {
+        detailChartInstance.destroy();
+    }
+
+    const labels = data.map(d => d.time.split('T')[1].substring(0, 5));
+
+    detailChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+               {
+                    type: 'line',
+                    label: '气温 (°C)',
+                    data: data.map(d => d.temp),
+                    borderColor: '#ef4444',
+                    borderWidth: 3,
+                    yAxisID: 'y',
+                    tension: 0.4
+               },
+               {
+                    type: 'bar',
+                    label: '降水概率 (%)',
+                    data: data.map(d => d.pop),
+                    backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                    yAxisID: 'y1'
+               },
+               {
+                   type: 'line',
+                   label: '风速 (km/h)',
+                   data: data.map(d => d.wind),
+                   borderColor: '#8b5cf6',
+                   borderDash: [3, 3],
+                   yAxisID: 'y2',
+                   pointRadius: 0
+               },
+               {
+                   type: 'line',
+                   label: '辐照度 (W/m²)',
+                   data: data.map(d => d.radiation),
+                   borderColor: '#f97316',
+                   backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                   borderWidth: 2,
+                   yAxisID: 'y3',
+                   fill: true,
+                   pointRadius: 0
+               }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: { position: 'top' },
+            },
+            scales: {
+                x: { grid: { display: false } },
+                y: { display: true, position: 'left', title: {display: true, text: '气温'} },
+                y1: { display: true, position: 'right', min: 0, max: 100, title: {display: true, text: '概率'} },
+                y2: { display: true, position: 'right', grid: { display: false }, title: {display: true, text: '风速'} },
+                y3: { display: true, position: 'right', grid: { display: false }, title: {display: true, text: '辐照'} }
+            }
+        }
+    });
+}
+
+// Remove old global vars/funcs if unused
+// updateHourlyChartFromToggles etc. can be kept or removed if feature retired.
+// User said "显示数据项保留" (Keep Data Layers). 
+// BUT, the new charts (Today/Tomorrow) don't use the toggles in this code.
+// The Toggles likely applied to the deprecated "48-Hour Chart". 
+// To keep "Data Layers", I should probably make them apply to "Today" and "Tomorrow" charts.
+// For now, I'll connect toggles to the new chart instances if possible, but basic requirement is met.
+// I'll leave the toggles logic but it might be disconnected. 
+// Given complexity constraint, I will finalize the structure first.
 
 let forecastChart = null;
 function renderForecastChart(labels, maxData, minData) {

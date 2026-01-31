@@ -24,45 +24,60 @@ class WeatherService:
     
     def search_city(self, query: str) -> List[Dict[str, Any]]:
         """
-        搜索城市
-        
-        Args:
-            query: 搜索关键词
-            
-        Returns:
-            搜索到的城市列表
+        搜索城市 (支持本地库优先)
         """
+        results = []
         try:
-            url = f"https://geocoding-api.open-meteo.com/v1/search?name={query}&language=zh&count=10"
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            data = response.json()
+            # 1. 先尝试从本地数据库匹配 (Item: 提升搜索体验)
+            local_sql = "SELECT city_name as name, latitude, longitude, region FROM city_config WHERE city_name LIKE ?"
+            local_matches = self.db_manager.execute_query(local_sql, (f"%{query}%",))
             
-            results = []
-            for item in data.get('results', []):
-                # 构造省/市/县描述
-                admin1 = item.get('admin1', '')
-                admin2 = item.get('admin2', '')
-                admin3 = item.get('admin3', '')
-                country = item.get('country', '')
-                
-                region_parts = [r for r in [country, admin1, admin2, admin3] if r]
-                region = " > ".join(region_parts)
-                
+            for match in local_matches:
                 results.append({
-                    'name': item.get('name'),
-                    'latitude': item.get('latitude'),
-                    'longitude': item.get('longitude'),
-                    'region': region,
-                    'country': country,
-                    'admin1': admin1,
-                    'admin2': admin2,
-                    'admin3': admin3
+                    'name': match['name'],
+                    'latitude': match['latitude'],
+                    'longitude': match['longitude'],
+                    'region': match['region'],
+                    'country': '中国',
+                    'admin1': match['region'],
+                    'admin2': '',
+                    'admin3': ''
                 })
+            
+            # 2. 如果本地结果较少，再调用外部 API
+            if len(results) < 5:
+                url = f"https://geocoding-api.open-meteo.com/v1/search?name={query}&language=zh&count=10"
+                response = requests.get(url, timeout=10)
+                response.raise_for_status()
+                data = response.json()
+                
+                for item in data.get('results', []):
+                    name = item.get('name')
+                    # 避免与本地结果重复
+                    if any(r['name'] == name for r in results):
+                        continue
+                        
+                    admin1 = item.get('admin1', '')
+                    admin2 = item.get('admin2', '')
+                    admin3 = item.get('admin3', '')
+                    country = item.get('country', '')
+                    region_parts = [r for r in [country, admin1, admin2, admin3] if r]
+                    region = " > ".join(region_parts)
+                    
+                    results.append({
+                        'name': name,
+                        'latitude': item.get('latitude'),
+                        'longitude': item.get('longitude'),
+                        'region': region,
+                        'country': country,
+                        'admin1': admin1,
+                        'admin2': admin2,
+                        'admin3': admin3
+                    })
             return results
         except Exception as e:
             logger.error(f"查询城市失败: {e}")
-            return []
+            return results # 返回已有的本地结果
 
     def __init__(
         self, 
@@ -458,7 +473,7 @@ class WeatherService:
 
     def get_current_weather(self, city_id: int) -> Dict[str, Any]:
         """
-        获取实时天气
+        获取实时天气 (包含辐照度)
         """
         coords = self.city_manager.get_coordinates(city_id)
         if not coords:
@@ -467,20 +482,24 @@ class WeatherService:
         lon, lat = coords
         city_info = self.city_manager.get_city_by_id(city_id)
         
-        url = f"{self.forecast_url}?latitude={lat}&longitude={lon}&current_weather=true&timezone=Asia/Shanghai"
+        # 使用新的 API 参数格式以获取更多数据 (如辐射)
+        # current=temperature_2m,wind_speed_10m,weather_code,shortwave_radiation
+        url = f"{self.forecast_url}?latitude={lat}&longitude={lon}&current=temperature_2m,wind_speed_10m,weather_code,shortwave_radiation&timezone=Asia/Shanghai"
         
         try:
             response = requests.get(url, timeout=10)
             response.raise_for_status()
             data = response.json()
             
-            current = data.get('current_weather', {})
-            code = int(current.get('weathercode', 0))
+            # 解析 new format 'current' object
+            current = data.get('current', {})
+            code = int(current.get('weather_code', 0))
             
             return {
                 'city_name': city_info['city_name'],
-                'temperature': current.get('temperature'),
-                'wind_speed': current.get('windspeed'),
+                'temperature': current.get('temperature_2m'),
+                'wind_speed': current.get('wind_speed_10m'),
+                'radiation': current.get('shortwave_radiation', 0), # 新增辐照度
                 'weather_code': code,
                 'weather_name': self.weather_code_map.get(code, f"未知({code})"),
                 'update_time': current.get('time', '').replace('T', ' ')
@@ -491,7 +510,7 @@ class WeatherService:
 
     def get_forecast(self, city_id: int, days: int = 7) -> Dict[str, Any]:
         """
-        获取天气预测
+        获取天气预报 (含7天预报与48小时详情)
         """
         coords = self.city_manager.get_coordinates(city_id)
         if not coords:
@@ -500,7 +519,10 @@ class WeatherService:
         lon, lat = coords
         city_info = self.city_manager.get_city_by_id(city_id)
         
-        url = f"{self.forecast_url}?latitude={lat}&longitude={lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Asia/Shanghai&forecast_days={days}"
+        # 请求每日、每小时以及15分钟高精度数据
+        # hourly=...
+        # minutely_15=temperature_2m,precipitation_probability,wind_speed_10m,shortwave_radiation
+        url = f"{self.forecast_url}?latitude={lat}&longitude={lon}&daily=weather_code,temperature_2m_max,temperature_2m_min&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,wind_speed_10m,shortwave_radiation&minutely_15=temperature_2m,precipitation_probability,wind_speed_10m,shortwave_radiation&forecast_days={days}&timezone=Asia/Shanghai"
         
         try:
             response = requests.get(url, timeout=10)
@@ -508,28 +530,68 @@ class WeatherService:
             data = response.json()
             
             daily = data.get('daily', {})
-            times = daily.get('time', [])
-            codes = daily.get('weathercode', [])
-            temps_max = daily.get('temperature_2m_max', [])
-            temps_min = daily.get('temperature_2m_min', [])
-            precips = daily.get('precipitation_sum', [])
+            hourly = data.get('hourly', {})
+            minutely = data.get('minutely_15', {})
             
+            # --- 处理每日预报 (7天) ---
             forecast_list = []
-            for i in range(len(times)):
+            dates = daily.get('time', [])
+            codes = daily.get('weather_code', [])
+            max_temps = daily.get('temperature_2m_max', [])
+            min_temps = daily.get('temperature_2m_min', [])
+            
+            for i in range(len(dates)):
                 code = int(codes[i])
                 forecast_list.append({
-                    'date': times[i],
-                    'temp_max': temps_max[i],
-                    'temp_min': temps_min[i],
+                    'date': dates[i],
                     'weather_code': code,
                     'weather_name': self.weather_code_map.get(code, f"未知({code})"),
-                    'precipitation_sum': precips[i]
+                    'temp_max': max_temps[i],
+                    'temp_min': min_temps[i]
                 })
+
+            # --- 处理每小时预报 (全部) ---
+            hourly_list = []
+            h_times = hourly.get('time', [])
+            h_temps = hourly.get('temperature_2m', [])
+            h_humidity = hourly.get('relative_humidity_2m', [])
+            h_precip = hourly.get('precipitation_probability', [])
+            h_wind = hourly.get('wind_speed_10m', [])
+            h_rad = hourly.get('shortwave_radiation', [])
             
+            for i in range(len(h_times)):
+                hourly_list.append({
+                    'time': h_times[i],
+                    'temp': h_temps[i],
+                    'humidity': h_humidity[i],
+                    'pop': h_precip[i],
+                    'wind': h_wind[i],
+                    'radiation': h_rad[i]
+                })
+
+            # --- 处理15分钟预报 (高精度数据) ---
+            minutely_list = []
+            m_times = minutely.get('time', [])
+            m_temps = minutely.get('temperature_2m', [])
+            m_precip = minutely.get('precipitation_probability', [])
+            m_wind = minutely.get('wind_speed_10m', [])
+            m_rad = minutely.get('shortwave_radiation', [])
+
+            for i in range(len(m_times)):
+                minutely_list.append({
+                    'time': m_times[i],
+                    'temp': m_temps[i],
+                    'pop': m_precip[i],
+                    'wind': m_wind[i],
+                    'radiation': m_rad[i]
+                })
+
             return {
                 'city_name': city_info['city_name'],
-                'daily_forecast': forecast_list
+                'daily_forecast': forecast_list,
+                'hourly_forecast': hourly_list,
+                'minutely_15_forecast': minutely_list
             }
         except Exception as e:
-            logger.error(f"获取天气预测失败: {e}")
+            logger.error(f"获取天气预报失败: {e}")
             raise

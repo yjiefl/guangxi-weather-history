@@ -46,6 +46,12 @@ GUANGXI_CITIES = [
     {'id': 12, 'city_name': '河池', 'longitude': 108.0854, 'latitude': 24.6928, 'region': '广西'},
     {'id': 13, 'city_name': '来宾', 'longitude': 109.2211, 'latitude': 23.7509, 'region': '广西'},
     {'id': 14, 'city_name': '崇左', 'longitude': 107.3645, 'latitude': 22.3769, 'region': '广西'},
+    {'id': 15, 'city_name': '宁明', 'longitude': 107.07, 'latitude': 22.14, 'region': '广西'},
+    {'id': 16, 'city_name': '扶绥', 'longitude': 107.90, 'latitude': 22.63, 'region': '广西'},
+    {'id': 17, 'city_name': '大新', 'longitude': 107.20, 'latitude': 22.83, 'region': '广西'},
+    {'id': 18, 'city_name': '天等', 'longitude': 107.13, 'latitude': 23.08, 'region': '广西'},
+    {'id': 19, 'city_name': '龙州', 'longitude': 106.85, 'latitude': 22.34, 'region': '广西'},
+    {'id': 20, 'city_name': '凭祥', 'longitude': 106.75, 'latitude': 22.10, 'region': '广西'},
     # 增加更多主流城市
     {'id': 101, 'city_name': '北京', 'longitude': 116.4074, 'latitude': 39.9042, 'region': '北京'},
     {'id': 102, 'city_name': '上海', 'longitude': 121.4737, 'latitude': 31.2304, 'region': '上海'},
