@@ -194,33 +194,7 @@ function bindEvents() {
         });
     });
 
-    // 停止服务按钮 (增加确认提示)
-    const shutdownBtn = document.getElementById('shutdownBtn');
-    if (shutdownBtn) {
-        shutdownBtn.onclick = async () => {
-            if (confirm("确定要停止并关闭后台服务吗？\n关闭后网页将无法查询数据，如需再次使用需重新通过运行脚本启动。")) {
-                shutdownBtn.textContent = '正在退出...';
-                shutdownBtn.disabled = true;
-                const statusDot = document.querySelector('.status-dot');
-                const statusText = document.querySelector('.status-text');
-                if (statusDot) statusDot.className = 'status-dot offline';
-                if (statusText) statusText.textContent = '正在关机...';
-
-                // 禁用交互
-                document.body.style.opacity = '0.5';
-                document.body.style.pointerEvents = 'none';
-
-                try {
-                    api.shutdown();
-                    setTimeout(() => {
-                        window.location.reload(); // 重载页面以显示断开连接状态
-                    }, 1500);
-                } catch (e) {
-                    console.log('信号已发出');
-                }
-            }
-        };
-    }
+    // 停止服务按钮已移除 (Item 68)
 
     // 筛选器事件
     document.getElementById('cityFilter').addEventListener('change', handleFilterChange);
