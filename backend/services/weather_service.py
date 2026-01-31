@@ -11,7 +11,7 @@ from backend.services.cache_manager import CacheManager
 from backend.models.city import CityManager
 from backend.models.database import DatabaseManager
 
-from backend.config import AVAILABLE_FIELDS
+from backend.config import AVAILABLE_FIELDS, OPEN_METEO_FORECAST_URL
 
 logger = logging.getLogger(__name__)
 
@@ -81,9 +81,17 @@ class WeatherService:
             db_manager: 数据库管理器实例（依赖注入）
         """
         self.base_url = base_url
+        self.forecast_url = OPEN_METEO_FORECAST_URL
         self.cache = cache_manager
         self.city_manager = city_manager
         self.db_manager = db_manager
+        self.weather_code_map = {
+            0: '晴朗', 1: '晴到多云', 2: '多云', 3: '阴天', 45: '雾', 
+            48: '沉积雾', 51: '小毛毛雨', 53: '毛毛雨', 55: '大毛毛雨', 
+            61: '小雨', 63: '中雨', 65: '大雨', 71: '小雪', 
+            73: '中雪', 75: '大雪', 80: '阵雨', 81: '中阵雨', 
+            82: '大阵雨', 95: '雷阵雨'
+        }
         logger.info("天气服务初始化完成")
     
     def get_historical_weather(
@@ -446,4 +454,82 @@ class WeatherService:
             
         except Exception as e:
             logger.error(f"保存天气数据到数据库失败: {e}")
+            raise
+
+    def get_current_weather(self, city_id: int) -> Dict[str, Any]:
+        """
+        获取实时天气
+        """
+        coords = self.city_manager.get_coordinates(city_id)
+        if not coords:
+            raise ValueError("City not found")
+        
+        lon, lat = coords
+        city_info = self.city_manager.get_city_by_id(city_id)
+        
+        url = f"{self.forecast_url}?latitude={lat}&longitude={lon}&current_weather=true&timezone=Asia/Shanghai"
+        
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            current = data.get('current_weather', {})
+            code = int(current.get('weathercode', 0))
+            
+            return {
+                'city_name': city_info['city_name'],
+                'temperature': current.get('temperature'),
+                'wind_speed': current.get('windspeed'),
+                'weather_code': code,
+                'weather_name': self.weather_code_map.get(code, f"未知({code})"),
+                'update_time': current.get('time', '').replace('T', ' ')
+            }
+        except Exception as e:
+            logger.error(f"获取实时天气失败: {e}")
+            raise
+
+    def get_forecast(self, city_id: int, days: int = 7) -> Dict[str, Any]:
+        """
+        获取天气预测
+        """
+        coords = self.city_manager.get_coordinates(city_id)
+        if not coords:
+            raise ValueError("City not found")
+        
+        lon, lat = coords
+        city_info = self.city_manager.get_city_by_id(city_id)
+        
+        url = f"{self.forecast_url}?latitude={lat}&longitude={lon}&daily=weathercode,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=Asia/Shanghai&forecast_days={days}"
+        
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+            
+            daily = data.get('daily', {})
+            times = daily.get('time', [])
+            codes = daily.get('weathercode', [])
+            temps_max = daily.get('temperature_2m_max', [])
+            temps_min = daily.get('temperature_2m_min', [])
+            precips = daily.get('precipitation_sum', [])
+            
+            forecast_list = []
+            for i in range(len(times)):
+                code = int(codes[i])
+                forecast_list.append({
+                    'date': times[i],
+                    'temp_max': temps_max[i],
+                    'temp_min': temps_min[i],
+                    'weather_code': code,
+                    'weather_name': self.weather_code_map.get(code, f"未知({code})"),
+                    'precipitation_sum': precips[i]
+                })
+            
+            return {
+                'city_name': city_info['city_name'],
+                'daily_forecast': forecast_list
+            }
+        except Exception as e:
+            logger.error(f"获取天气预测失败: {e}")
             raise

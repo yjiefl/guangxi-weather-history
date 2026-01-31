@@ -13,6 +13,7 @@ DATABASE_PATH = os.path.join(BASE_DIR, 'data', 'weather.db')
 
 # Open-Meteo API配置
 OPEN_METEO_BASE_URL = 'https://archive-api.open-meteo.com/v1/archive'
+OPEN_METEO_FORECAST_URL = 'https://api.open-meteo.com/v1/forecast'
 
 # 缓存配置
 CACHE_EXPIRE_HOURS = 720  # 30天（历史数据不会改变）

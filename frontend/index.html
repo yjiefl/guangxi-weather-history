@@ -62,6 +62,9 @@
               <button class="nav-btn active" data-main-tab="query">
                 数据查询
               </button>
+              <button class="nav-btn" data-main-tab="live">
+                天气预报 & 实况
+              </button>
               <button class="nav-btn" data-main-tab="management">
                 数据管理
               </button>
@@ -274,6 +277,77 @@
                   </tbody>
                 </table>
               </div>
+            </div>
+          </section>
+        </div>
+        
+        <!-- 天气实况 & 预报标签页 (New) -->
+        <div id="main-tab-live" class="main-tab-content">
+          <section class="live-weather-panel">
+            <h2 class="section-title">天气实况 & 7天预报</h2>
+            
+            <div class="query-form" style="margin-bottom: 25px;">
+              <div class="form-row">
+                <div class="form-group full-width">
+                  <label>选择城市</label>
+                  <div class="city-selector-grid" id="liveCitySelect">
+                    <!-- 动态生成 -->
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 实况展示面版 -->
+            <div id="liveWeatherDisplay" class="live-weather-grid" style="display: none;">
+              <!-- 实时天气卡片 -->
+              <div class="live-card current-card">
+                <div class="live-card-header">
+                  <h3 id="liveCityName">--</h3>
+                  <span class="live-badge">实时实况</span>
+                </div>
+                <div class="current-weather-main">
+                  <div class="current-temp-container">
+                    <span id="currentTemp">--</span><span class="unit">°C</span>
+                  </div>
+                  <div class="current-info">
+                    <div id="currentWeatherIcon" class="weather-icon-large">☀️</div>
+                    <div id="currentWeatherName">--</div>
+                  </div>
+                </div>
+                <div class="current-details-grid">
+                  <div class="detail-item">
+                    <span class="label">风速</span>
+                    <span class="value" id="currentWind">-- m/s</span>
+                  </div>
+                  <div class="detail-item">
+                    <span class="label">更新时间</span>
+                    <span class="value" id="currentUpdateTime">--:--</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 7天预报卡片 -->
+              <div class="live-card forecast-card">
+                <div class="live-card-header">
+                  <h3>未来 7 天预报</h3>
+                </div>
+                <div class="forecast-list" id="forecastList">
+                  <!-- 动态生成 -->
+                </div>
+              </div>
+            </div>
+
+            <!-- 预测趋势图 -->
+            <div id="forecastChartCard" class="chart-card" style="display: none; margin-top: 20px;">
+              <h3 class="chart-title">未来一周温度趋势预测</h3>
+              <div class="chart-container" style="height: 300px;">
+                <canvas id="forecastChart"></canvas>
+              </div>
+            </div>
+            
+            <div id="liveLoading" class="loading-indicator" style="display: none;">
+                <div class="spinner"></div>
+                <p>正在获取实时气象数据...</p>
             </div>
           </section>
         </div>

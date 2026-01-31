@@ -344,6 +344,48 @@ Response:
 }
 ```
 
+#### 5.1.5 获取实时天气 (New)
+
+```http
+GET /api/weather/current?city_id=1
+Response:
+{
+  "code": 200,
+  "data": {
+    "city_name": "南宁",
+    "temperature": 22.5,
+    "relative_humidity": 65,
+    "wind_speed": 3.2,
+    "weather_code": 1,
+    "weather_name": "晴到多云",
+    "update_time": "2026-01-31 14:00:00"
+  }
+}
+```
+
+#### 5.1.6 获取天气预测 (New)
+
+```http
+GET /api/weather/forecast?city_id=1&days=7
+Response:
+{
+  "code": 200,
+  "data": {
+    "city_name": "南宁",
+    "daily_forecast": [
+      {
+        "date": "2026-02-01",
+        "temp_max": 24.0,
+        "temp_min": 18.0,
+        "weather_code": 0,
+        "precipitation_sum": 0.0
+      },
+      ...
+    ]
+  }
+}
+```
+
 ## 6. 前端UI设计
 
 ### 6.1 页面布局

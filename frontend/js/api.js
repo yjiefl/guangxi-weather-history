@@ -93,6 +93,25 @@ class APIClient {
         return this.post('/weather/query', params);
     }
 
+    /**
+     * 获取实时天气
+     * @param {number} cityId - 城市ID
+     * @returns {Promise} 实时天气
+     */
+    async getCurrentWeather(cityId) {
+        return this.get(`/weather/current?city_id=${cityId}`);
+    }
+
+    /**
+     * 获取天气预测
+     * @param {number} cityId - 城市ID
+     * @param {number} days - 预测天数
+     * @returns {Promise} 天气预测
+     */
+    async getForecast(cityId, days = 7) {
+        return this.get(`/weather/forecast?city_id=${cityId}&days=${days}`);
+    }
+
 
     /**
      * 删除数据

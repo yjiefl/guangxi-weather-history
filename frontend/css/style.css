@@ -1285,3 +1285,199 @@ body {
     color: var(--text-muted);
     font-weight: 500;
 }
+/* ========================================
+   天气实况 & 预报样式 (New - feature/realtime-forecast)
+   ======================================== */
+
+.live-weather-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.live-card {
+    background: var(--bg-surface);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    border: 0.5px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 24px;
+    box-shadow: var(--shadow-md);
+    display: flex;
+    flex-direction: column;
+}
+
+.current-card {
+    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+}
+
+.live-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.live-card-header h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.live-badge {
+    background: var(--color-primary);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: var(--border-radius-pill);
+}
+
+.current-weather-main {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 20px 0;
+}
+
+.current-temp-container {
+    font-size: 4rem;
+    font-weight: 800;
+    color: var(--text-primary);
+    letter-spacing: -2px;
+}
+
+.current-temp-container .unit {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    vertical-align: top;
+    margin-top: 15px;
+    display: inline-block;
+}
+
+.current-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.weather-icon-large {
+    font-size: 4rem;
+}
+
+#currentWeatherName {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.current-details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 15px;
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 0.5px solid var(--border-color);
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detail-item .label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.detail-item .value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* 预报列表项 */
+.forecast-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.forecast-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: var(--border-radius);
+    transition: background 0.2s ease;
+}
+
+.forecast-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.forecast-date {
+    flex: 1;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.forecast-icon {
+    width: 40px;
+    text-align: center;
+    font-size: 1.25rem;
+}
+
+.forecast-name {
+    flex: 1;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.forecast-temp {
+    flex: 1.5;
+    text-align: right;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.forecast-temp .low {
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin-left: 8px;
+}
+
+/* 城市选择网格 */
+.city-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+}
+
+.city-chip {
+    padding: 8px 12px;
+    background: #f2f2f7;
+    border-radius: var(--border-radius);
+    text-align: center;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.city-chip:hover {
+    background: #e5e5ea;
+}
+
+.city-chip.active {
+    background: var(--color-primary);
+    color: white;
+}
+

@@ -220,6 +220,35 @@ def shutdown():
             'data': None
         }), 500
 
+@api_bp.route('/weather/current', methods=['GET'])
+def get_current_weather():
+    """获取实时天气"""
+    city_id = request.args.get('city_id', type=int)
+    if not city_id:
+        return jsonify({'code': 400, 'message': '缺少必要参数：city_id', 'data': None}), 400
+    try:
+        data = weather_service.get_current_weather(city_id)
+        return jsonify({'code': 200, 'message': '获取成功', 'data': data})
+    except Exception as e:
+        logger.error(f"获取实时天气失败: {e}")
+        return jsonify({'code': 500, 'message': f'获取失败: {str(e)}', 'data': None}), 500
+
+
+@api_bp.route('/weather/forecast', methods=['GET'])
+def get_weather_forecast():
+    """获取天气预测"""
+    city_id = request.args.get('city_id', type=int)
+    days = request.args.get('days', 7, type=int)
+    if not city_id:
+        return jsonify({'code': 400, 'message': '缺少必要参数：city_id', 'data': None}), 400
+    try:
+        data = weather_service.get_forecast(city_id, days)
+        return jsonify({'code': 200, 'message': '获取成功', 'data': data})
+    except Exception as e:
+        logger.error(f"获取天气预测失败: {e}")
+        return jsonify({'code': 500, 'message': f'获取失败: {str(e)}', 'data': None}), 500
+
+
 @api_bp.route('/weather/query', methods=['POST'])
 def query_weather():
     """

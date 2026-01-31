@@ -63,6 +63,9 @@ async function initApp() {
         // 初始化日期限制
         initDateConstraints();
 
+        // 为实况页渲染城市 (New)
+        renderLiveCitySelector();
+
         console.log('应用初始化完成');
     } catch (error) {
         console.error('应用初始化失败:', error);
@@ -229,6 +232,11 @@ function handleMainTabSwitch(tabName) {
     });
 
     console.log(`切换到主标签: ${tabName}`);
+    
+    // 如果切换到实况标签且没有选过城市，默认选第一个
+    if (tabName === 'live' && !appState.currentLiveCityId && appState.cities.length > 0) {
+        handleLiveCitySelect(appState.cities[0].id);
+    }
 }
 
 /**
@@ -990,6 +998,194 @@ function handleFilterChange() {
     } else {
         displayData(appState.currentData);
     }
+}
+
+/**
+ * 渲染实况页的城市选择器
+ */
+function renderLiveCitySelector() {
+    const container = document.getElementById('liveCitySelect');
+    if (!container) return;
+
+    container.innerHTML = '';
+    appState.cities.forEach(city => {
+        const chip = document.createElement('div');
+        chip.className = 'city-chip';
+        if (appState.currentLiveCityId === city.id) chip.classList.add('active');
+        chip.textContent = city.name;
+        chip.onclick = () => handleLiveCitySelect(city.id);
+        container.appendChild(chip);
+    });
+}
+
+/**
+ * 处理实况页城市选择
+ */
+async function handleLiveCitySelect(cityId) {
+    appState.currentLiveCityId = cityId;
+    
+    // 更新 UI 样式
+    document.querySelectorAll('#liveCitySelect .city-chip').forEach(chip => {
+        const cityInfo = appState.cities.find(c => c.id === cityId);
+        if (cityInfo && chip.textContent === cityInfo.name) {
+            chip.classList.add('active');
+        } else {
+            chip.classList.remove('active');
+        }
+    });
+
+    const displayPanel = document.getElementById('liveWeatherDisplay');
+    const forecastChartCard = document.getElementById('forecastChartCard');
+    const loading = document.getElementById('liveLoading');
+
+    if (displayPanel) displayPanel.style.display = 'none';
+    if (forecastChartCard) forecastChartCard.style.display = 'none';
+    if (loading) loading.style.display = 'flex';
+
+    try {
+        // 1. 获取实时天气
+        const currentResp = await api.getCurrentWeather(cityId);
+        renderCurrentWeather(currentResp.data);
+
+        // 2. 获取天气预测
+        const forecastResp = await api.getForecast(cityId, 7);
+        renderForecast(forecastResp.data);
+
+        if (loading) loading.style.display = 'none';
+        if (displayPanel) displayPanel.style.display = 'grid';
+        if (forecastChartCard) forecastChartCard.style.display = 'block';
+    } catch (error) {
+        console.error('获取实况/预报失败:', error);
+        if (loading) loading.style.display = 'none';
+        showError('数据获取失败：' + error.message);
+    }
+}
+
+/**
+ * 渲染实时天气卡片
+ */
+function renderCurrentWeather(data) {
+    const cityEl = document.getElementById('liveCityName');
+    const tempEl = document.getElementById('currentTemp');
+    const nameEl = document.getElementById('currentWeatherName');
+    const windEl = document.getElementById('currentWind');
+    const timeEl = document.getElementById('currentUpdateTime');
+    
+    if (cityEl) cityEl.textContent = data.city_name;
+    if (tempEl) tempEl.textContent = data.temperature.toFixed(1);
+    if (nameEl) nameEl.textContent = data.weather_name;
+    if (windEl) windEl.textContent = `${(data.wind_speed / 3.6).toFixed(1)} m/s`;
+    if (timeEl) timeEl.textContent = data.update_time.split(' ')[1];
+    
+    // 图标
+    const weatherInfo = weatherCodeMap[data.weather_code] || { icon: '☀️' };
+    const iconEl = document.getElementById('currentWeatherIcon');
+    if (iconEl) iconEl.textContent = weatherInfo.icon;
+}
+
+/**
+ * 渲染预报数据与图表
+ */
+function renderForecast(data) {
+    const list = document.getElementById('forecastList');
+    if (!list) return;
+
+    list.innerHTML = '';
+
+    const labels = [];
+    const tempsMax = [];
+    const tempsMin = [];
+
+    data.daily_forecast.forEach((day, index) => {
+        // 1. 列表渲染
+        const item = document.createElement('div');
+        item.className = 'forecast-item';
+        
+        const dateObj = new Date(day.date);
+        const dateStr = index === 0 ? '今天' : `${dateObj.getMonth() + 1}/${dateObj.getDate()}`;
+        
+        const weatherInfo = weatherCodeMap[day.weather_code] || { icon: '☀️' };
+
+        item.innerHTML = `
+            <div class="forecast-date">${dateStr}</div>
+            <div class="forecast-icon">${weatherInfo.icon}</div>
+            <div class="forecast-name">${day.weather_name}</div>
+            <div class="forecast-temp">
+                <span class="high">${day.temp_max.toFixed(0)}°</span>
+                <span class="low">${day.temp_min.toFixed(0)}°</span>
+            </div>
+        `;
+        list.appendChild(item);
+
+        // 2. 准备图表数据
+        labels.push(dateStr);
+        tempsMax.push(day.temp_max);
+        tempsMin.push(day.temp_min);
+    });
+
+    // 3. 渲染预报图表
+    renderForecastChart(labels, tempsMax, tempsMin);
+}
+
+let forecastChart = null;
+function renderForecastChart(labels, maxData, minData) {
+    const chartEl = document.getElementById('forecastChart');
+    if (!chartEl) return;
+
+    const ctx = chartEl.getContext('2d');
+    
+    if (forecastChart) {
+        forecastChart.destroy();
+    }
+
+    forecastChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '最高温度 (°C)',
+                    data: maxData,
+                    borderColor: '#ff3b30',
+                    backgroundColor: 'rgba(255, 59, 48, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true
+                },
+                {
+                    label: '最低温度 (°C)',
+                    data: minData,
+                    borderColor: '#007aff',
+                    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'top',
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)'
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
 }
 
 // 页面加载完成后初始化应用
