@@ -1,4 +1,4 @@
-# 广西历史天气数据查询系统
+# 天气查询系统
 
 <div align="center">
 
@@ -7,7 +7,7 @@
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![Open-Meteo](https://img.shields.io/badge/API-Open--Meteo-orange.svg)
 
-一个优雅的历史天气数据查询系统，支持广西地区14个城市2022年至今的详细历史天气数据查询、可视化和导出功能。
+一个优雅的历史天气数据查询系统，支持全国主要城市2022年至今的详细历史天气数据查询、可视化和导出功能。
 
 **包含辐照度、多高度风速等专业气象数据**
 

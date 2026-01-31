@@ -138,7 +138,7 @@ def main():
     主函数
     """
     logger.info("=" * 60)
-    logger.info("广西历史天气数据查询系统启动中...")
+    logger.info("天气查询系统启动中...")
     logger.info("=" * 60)
     
     # 创建应用
