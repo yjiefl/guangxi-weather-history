@@ -72,14 +72,25 @@ def create_app():
     # 初始化城市管理器
     city_manager = CityManager(db_manager)
     
-    # 【新增】如果城市列表为空，则初始化默认城市 (Item 51)
+    # 【新增】自动初始化城市数据 (Item 51)
     try:
-        if not city_manager.get_all_cities():
+        existing_cities = city_manager.get_all_cities()
+        if not existing_cities:
             from backend.config import GUANGXI_CITIES
             city_manager.init_cities(GUANGXI_CITIES)
             logger.info("初始城市数据导入完成")
+        elif len(existing_cities) < 5:
+            # 如果现有启用城市较少，尝试补全默认城市
+            from backend.config import GUANGXI_CITIES
+            to_add = []
+            for c in GUANGXI_CITIES:
+                if not city_manager.get_city_by_name(c['city_name']):
+                    to_add.append(c)
+            if to_add:
+                city_manager.init_cities(to_add)
+                logger.info(f"补全了 {len(to_add)} 个默认城市")
     except Exception as e:
-        logger.error(f"自动导入城市数据失败: {e}")
+        logger.error(f"自动初始化城市数据失败: {e}")
     
     # 初始化缓存管理器
     cache_manager = CacheManager(db_manager, CACHE_EXPIRE_HOURS)
