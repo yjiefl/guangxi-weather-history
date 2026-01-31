@@ -1184,17 +1184,11 @@ body {
   gap: var(--spacing-lg);
 }
 
-/* 状态指示器 */
+/* 状态指示器 (简约版，移至 Logo 旁) */
 .status-indicator {
   display: flex;
   align-items: center;
-  gap: var(--spacing-xs);
-  gap: var(--spacing-xs);
-  background: #f2f2f7;
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 0.8125rem;
-  border: 1px solid rgba(0, 0, 0, 0.05);
+  margin-left: -4px;
 }
 
 .status-dot {

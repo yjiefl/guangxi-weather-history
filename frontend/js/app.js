@@ -340,14 +340,14 @@ function startHealthCheck() {
     const isOnline = await api.ping();
     if (isOnline) {
       statusDot.className = "status-dot online";
-      statusText.textContent = "后端连接正常";
+      if (statusText) statusText.textContent = "后端连接正常";
       if (queryBtn) queryBtn.disabled = false;
       exportBtns.forEach((btn) => {
         if (btn) btn.disabled = false;
       });
     } else {
       statusDot.className = "status-dot offline";
-      statusText.textContent = "连接已断开";
+      if (statusText) statusText.textContent = "连接已断开";
       if (queryBtn) queryBtn.disabled = true;
       exportBtns.forEach((btn) => {
         if (btn) btn.disabled = true;
